@@ -16,9 +16,8 @@ git clone git@github.com:husicj/dm-calibration.git
 ```
 To add the calibration script to your path on Unix-like systems, run
 ```
-export PATH=/path-to-cloned-repo/dm-calibration:$PATH
+export PATH=path-to-cloned-repo/dm-calibration:$PATH
 ```
-where `path-to-cloned-repo` is the path from which the clone command was run.
 
 ## Usage
 
