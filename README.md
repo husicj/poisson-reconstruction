@@ -14,7 +14,7 @@ This project is currently in a partially incomplete state.
 
 To download the project, clone this repository with
 ```
-git clone git@github.com:husicj/dm-calibration.git
+git clone https://github.com/husicj/dm-calibration.git
 ```
 To add the calibration script to your path on Unix-like systems, run
 ```
