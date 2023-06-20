@@ -8,7 +8,6 @@ The goal of this project is to provide a streamlined process for calibration of 
 
 ## Requirements
 
-
 ## Installation
 
 To download the project, clone this repository with

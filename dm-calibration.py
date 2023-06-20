@@ -1,4 +1,8 @@
-   
+try:
+    import imageio.v3 as imageio
+except (ImportError, ModuleNotFoundError):
+    import imageio
+    
 import functools
 import glob
 import jax.numpy as jnp
@@ -14,11 +18,6 @@ from src import fast_fft
 from src import image_functions
 from src import iterate_poisson
 from src import zern as zern_mod
-
-try:
-    import imageio.v3 as imageio
-except (ImportError, ModuleNotFoundError):
-    import imageio
 
 #####
 ##### DEFINE CONSTANTS
