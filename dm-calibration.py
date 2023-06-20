@@ -137,7 +137,7 @@ if LOG_RESULTS:
         raise FileExistsError(f"A file already exists at {logFilePath}.")
     print(f"Logging results at {logFilePath}...")
 else:
-    logFilePath = '/dev/null'
+    logFilePath = os.devnull
     print("\nWarning: Not logging results. Change LOG_RESULTS to True to do so.\n")
 
 with open(logFilePath, "a") as logFile:
