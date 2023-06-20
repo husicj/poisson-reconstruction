@@ -1,0 +1,10 @@
+imageio==2.28.1
+jax==0.4.11
+matplotlib==3.7.1
+numba==0.57.0
+numpy==1.24.3
+Pillow==9.5.0
+Pillow==9.5.0
+pyFFTW==0.13.1
+scipy==1.10.1
+opencv-python==4.7.0

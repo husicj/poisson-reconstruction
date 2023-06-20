@@ -1,4 +1,4 @@
-# Deformable Mirror Calibration (v0.1.1)
+# Deformable Mirror Calibration (v0.1.2)
 
 ## Description
 
@@ -8,6 +8,7 @@ The goal of this project is to provide a streamlined process for calibration of 
 
 ## Requirements
 
+Dependencies can be found in requirements.txt.
 
 ## Installation
 
