@@ -115,13 +115,13 @@ def apply_algorithm_for_calibration(actuatorPath, logFile=None, verbose=False):
     log(logFile, f"coefficientList[\"{str(actuator)}\"] = c.copy()\n")
 
 #####
-##### RUN ALGORITHM
+##### SETUP
 #####
 
 try:
     targetDirectory = pathlib.Path(sys.argv[1])
 except IndexError:
-    prompt = input("No data directory given. Proceed with sample data (Y/n)? ")
+    prompt = input("No data directory given. To apply this script to data in a local directory, provide the path to the data as an argument when running the program. Alterinatively, proceed with sample data (Y/n)? ")
     if (prompt == 'n' or prompt == 'N'):
         sys.exit()
     if (prompt == 'y' or prompt == 'Y' or prompt == ''):
@@ -140,12 +140,15 @@ else:
     logFilePath = os.devnull
     print("\nWarning: Not logging results. Change LOG_RESULTS to True to do so.\n")
 
+#####
+##### RUN ALGORITHM
+#####
+
 with open(logFilePath, "a") as logFile:
 
     log(logFile, f"\n# {datetime.now()}")
     log(logFile, "# Zernike coefficients of mirror calibration data from src.iterate_poisson.iter_p\n")
     log(logFile, f"coefficientList = {{}}\nc = {{}}\n")
-
        
     actuatorList = [x for x in targetDirectory.iterdir() if x.is_dir()]
     for actuator in actuatorList:

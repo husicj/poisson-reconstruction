@@ -127,7 +127,7 @@ def normalize(j, numskip = 3):
     A = (2/eps(m))*(n+1)
     return np.float64(A)
 
-def get_zern(dsize, pupilSize, pixelSize, num_c, rotang = 0, numskip = 3, p2 = False, indexing = "Noll"):
+def get_zern(dsize, pupilSize, pixelSize, num_c, rotang = 0, numskip = 3, p2 = False, indexing = "ANSI"):
     
     zern = np.array([zernfun(i, dsize, pupilSize, pixelSize, indexing, rotang, numskip) 
                      for i in range(num_c)])
