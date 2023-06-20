@@ -16,10 +16,6 @@ To download the project, clone this repository with
 ```
 git clone https://github.com/husicj/dm-calibration.git
 ```
-To add the calibration script to your path on Unix-like systems, run
-```
-export PATH=path-to-cloned-repo/dm-calibration:$PATH
-```
 
 ## Usage
 
