@@ -9,7 +9,6 @@ Created on Thu Apr  2 12:25:27 2020
 import numpy as np
 import scipy
 from numpy.linalg import norm
-import matplotlib.pyplot as plt
 import pyfftw
 from scipy.fftpack import dctn, idctn
 from numba import njit
@@ -169,14 +168,6 @@ def load_data(data_dir, v = -1):
         datas.append(np.load(p/d))
     
     return datas
-
-def imshow(im, cbar = False, vmin = None, vmax = None, cmap = 'viridis', cbar_name = None, hide_ax = True):
-    
-    
-    plt.imshow(im, cmap = cmap, vmin = vmin, vmax = vmax, interpolation = 'none')
-    if hide_ax: plt.axis('off')
-    if cbar: plt.colorbar(label = cbar_name)
-    plt.show()
     
 def err(c, phi, show = True):
     err_val = 100*norm(c-phi)/norm(phi)
