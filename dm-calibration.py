@@ -112,7 +112,7 @@ def apply_algorithm_for_calibration(actuatorPath, logFile=None, verbose=False):
 
         log(logFile, f"c[{v}] = {list(np.array(c2))}")
 
-    log(logFile, f"coefficientList[\"{str(actuator)}\"] = c.copy()\n")
+    log(logFile, f"coefficientList[\"{actuator.parts[-1]}\"] = c.copy()\n")
 
 #####
 ##### SETUP
