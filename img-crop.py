@@ -1,23 +1,29 @@
 import tifffile
 import os
+import pathlib
 import sys
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 CENTER_PIXEL_X = 550
 CENTER_PIXEL_Y = 440
 RADIUS = 64
 
-filename = sys.argv[1]
+targetDirectory = pathlib.Path(sys.argv[1])
+actuatorList = [x for x in targetDirectory.iterdir() if x.is_dir()]
+actuatorPath = actuatorList[0]
 
-im = tifffile.imread(str(filename))
+calibrationImageSets = list(actuatorPath.glob('*.tif*'))
+    
+for i, filename in enumerate(calibrationImageSets):
 
-xmin = CENTER_PIXEL_X - RADIUS + 1
-xmax = CENTER_PIXEL_X + RADIUS
-ymin = CENTER_PIXEL_Y - RADIUS + 1
-ymax = CENTER_PIXEL_Y + RADIUS
+    im = tifffile.imread(str(filename))
 
-out = im[ : , xmin : xmax + 1 , ymin : ymax + 1]
+    xmin = CENTER_PIXEL_X - RADIUS + 1
+    xmax = CENTER_PIXEL_X + RADIUS
+    ymin = CENTER_PIXEL_Y - RADIUS + 1
+    ymax = CENTER_PIXEL_Y + RADIUS
 
-tifffile.imwrite("cropped.tif", out)
+    out = im[ : , xmin : xmax + 1 , ymin : ymax + 1]
+
+    tifffile.imwrite(f"cropped_{i}.tif", out)
