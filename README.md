@@ -35,7 +35,6 @@ python dm-calibration.py
 ```
 without additional arguments.
 
-## Acknowledgements
-
 ## License
 
+See LICENSE.txt
