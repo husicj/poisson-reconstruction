@@ -4,6 +4,8 @@
 
 The goal of this project is to provide a streamlined process for calibration of a deformable mirror. Specifically, making use of a phase diversity method and a algorithm based on the assumption of Poisson-distributed noise, the wavefront aberrations introduced by a given actuator as a function of applied actuatation parameter can be determined from a set of calibration images captured with differing degrees of defocus.
 
+This project is currently in a partially incomplete state.
+
 (Tested with Python 3.11.3 on the most current version of Arch Linux.)
 
 ## Requirements
@@ -14,11 +16,7 @@ Dependencies can be found in requirements.txt.
 
 To download the project, clone this repository with
 ```
-git clone git@github.com:husicj/dm-calibration.git
-```
-To add the calibration script to your path on Unix-like systems, run
-```
-export PATH=path-to-cloned-repo/dm-calibration:$PATH
+git clone https://github.com/husicj/dm-calibration.git
 ```
 
 ## Usage
