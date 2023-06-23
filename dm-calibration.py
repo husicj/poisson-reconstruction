@@ -77,7 +77,8 @@ def apply_algorithm_for_calibration(actuatorPath, logFile=None, verbose=False):
     for i, zStack in enumerate(calibrationImageSets):
         v = scan_path_name(zStack, r'[+-]?\d*([.,]\d+)|[+-]\d+')
         if v is None:
-            print(f"Could not determine the calibration voltage for file {zStack}. Please add the voltage to the filename. Skipping.")
+            print(f"Could not determine the calibration voltage for file {zStack}."
+                  "Please add the voltage to the filename. Skipping.")
             continue
         
         if verbose:
@@ -87,7 +88,7 @@ def apply_algorithm_for_calibration(actuatorPath, logFile=None, verbose=False):
         imgs0 = []
         for im in ims:
             #images cropped to a smaller region (128x128) centered around the imaged bead
-            imgs0.append(im[550-63:550+64 , 440-63:440+64])
+            imgs0.append(im)
         im = imgs0[3]
         imgs0 = imgs0[1:-1]
         imgs0 = np.array(imgs0)
@@ -98,6 +99,10 @@ def apply_algorithm_for_calibration(actuatorPath, logFile=None, verbose=False):
             raise ValueError((f"Currently only supports square images."
                               f"Consider cropping the images for the actuator at {actuator}."))
         else:
+            if im.shape[0] > 512:
+                print("Warning: using large images will result in significantly"
+                      "slower run times. Consider using img-crop.py to crop the"
+                      "images.")
             dsize = im.shape[0]
         zern = zern_mod.Zernikes(dsize, PUPIL_SIZE, PIXEL_SIZE, num_phi)
         num_inds = len(zern.inds[0])
