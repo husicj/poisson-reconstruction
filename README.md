@@ -1,4 +1,4 @@
-# Deformable Mirror Calibration (v0.1.4)
+# Deformable Mirror Calibration (v0.2.0)
 
 ## Description
 
@@ -29,6 +29,12 @@ This supports the directory structure `{data directory}/{actuator directories}/{
 
 The resulting data is output in the file "calibration\_data\_coefficients.py". When this file is imported as a python module, it supplies a dictionary keyed by the actuator directory names, containing dictionaries of coefficients keyed by voltage values, and ordered according to their ANSI indexing. The current default also excludes the first three Zernike coefficients, for the polynomials of order 0 and 1.
 
+The script currently only supports square images, and its run time increases dramatically with the size of the image. To navigate both of these limitations, you can run
+```
+python img-crop.py {data directory} {target directory}
+```
+This assumes the same directory structure as the previous script. Running this automatically crops the images in the data directory around their brightest region (such as the center of a point-like source used for calibration) and saves the results in the target directory with the same directory structure.
+
 To run the calibration program with the provided sample data, run the command
 ```
 python dm-calibration.py
@@ -37,4 +43,4 @@ without additional arguments.
 
 ## License
 
-See LICENSE.txt
+See LICENSE.txt.
