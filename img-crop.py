@@ -27,31 +27,41 @@ def find_int_mean(array):
 ##### SETUP
 #####
 
-sourceDirectory = pathlib.Path(sys.argv[1])
-targetDirectory = pathlib.Path(sys.argv[2])
+try:
+    sourceDirectory = pathlib.Path(sys.argv[1])
+    targetDirectory = pathlib.Path(sys.argv[2])
+    if not os.path.isdir(targetDirectory):
+        os.mkdir(targetDirectory)
+except IndexError:
+    print("usage: \"python img-crop.py {source_dir} {target_dir}\"")
+    exit(1)
 
 actuatorList = [x for x in sourceDirectory.iterdir() if x.is_dir()]
-actuatorPath = actuatorList[0]
-
-calibrationImageSets = list(actuatorPath.glob('*.tif*'))
 
 #####
 ##### CROP IMAGES
 #####
     
-for i, filename in enumerate(calibrationImageSets):
+for actuator in actuatorList:
+    calibrationImageSets = list(actuator.glob('*.tif*'))
+    actuatorPathName = actuator.parts[-1]
+    actuatorTargetDirectory = os.path.join(str(targetDirectory), actuatorPathName)
+    if not os.path.isdir(actuatorTargetDirectory):
+        os.mkdir(actuatorTargetDirectory)
 
-    im = tifffile.imread(str(filename))
+    for file in calibrationImageSets:
+        im = tifffile.imread(str(file))
 
-    stackCenter = im[STACK_CENTER_INDEX, :, :]
-    center_pixel_x, center_pixel_y = find_brightest_region(stackCenter)
-    print(f"Using center pixel ({center_pixel_x}, {center_pixel_y}) for cropping image at {filename}.")
+        stackCenter = im[STACK_CENTER_INDEX, :, :]
+        centerPixelX, centerPixelY = find_brightest_region(stackCenter)
+        print(f"Using center pixel ({centerPixelX}, {centerPixelY}) for cropping image at {file}.")
 
-    xmin = center_pixel_x - RADIUS + 1
-    xmax = center_pixel_x + RADIUS
-    ymin = center_pixel_y - RADIUS + 1
-    ymax = center_pixel_y + RADIUS
+        xmin = centerPixelX - RADIUS + 1
+        xmax = centerPixelX + RADIUS
+        ymin = centerPixelY - RADIUS + 1
+        ymax = centerPixelY + RADIUS
 
-    out = im[ : , xmin : xmax + 1 , ymin : ymax + 1]
+        out = im[ : , xmin : xmax + 1 , ymin : ymax + 1]
 
-    tifffile.imwrite(f"{targetDirectory}/cropped_{i}.tif", out)
+        writePath = os.path.join(actuatorTargetDirectory, "cropped_" + file.parts[-1])
+        tifffile.imwrite(writePath, out)
