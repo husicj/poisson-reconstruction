@@ -12,6 +12,9 @@ import pathlib
 import re
 import scipy
 import sys
+import tempfile
+
+import img_crop
 
 from datetime import datetime
 from src import fast_fft
@@ -35,9 +38,12 @@ VERBOSE = True
 num_phi = NUM_C
 Sk0 = np.pi*(PIXEL_SIZE*PUPIL_SIZE)**2
 
+DO_CROP = False
+
 #####
 ##### DEFINE FUNCTIONS
 #####
+
 
 def log(logFile, logString):
     if logFile is not None:
@@ -56,11 +62,11 @@ def invalid_response():
     if (prompt == 'n' or prompt == 'N'):
         sys.exit()
     if (prompt == 'y' or prompt == 'Y'):
-        targetDirectory = pathlib.Path("sample_data")
+        sourceDirectory = pathlib.Path("sample_data")
     else:
-        targetDirectory = invalid_response()
+        sourceDirectory = invalid_response()
 
-    return targetDirectory
+    return sourceDirectory
     
 
 def scan_path_name(path, regex):
@@ -70,6 +76,31 @@ def scan_path_name(path, regex):
         return None
 
     return match.group() # returns the matched string
+
+def suggest_crop(suggestion):
+    global DO_CROP
+    if not DO_CROP:
+        prompt = input(suggestion)
+        if (prompt == 'n' or prompt == 'N'):
+            sys.exit(1)
+        elif (prompt == 'y' or prompt == 'Y' or prompt == ''):
+            DO_CROP = True
+        else:
+            print("Invalid response. Exiting.")
+            sys.exit(1)
+
+    target = tempfile.TemporaryDirectory()
+    img_crop.crop_images(sourceDirectory, target.name, actuatorList)
+    return target.name
+
+def suggest_crop_for_shape():
+    return suggest_crop(f"Currently only supports square images. "
+                        f"Would you like to automatically crop the images (Y/n)? ")
+
+def suggest_crop_for_size():
+    return suggest_crop("Warning: using large images will result in significantly "
+                        "slower run times. Consider using img-crop.py to crop the "
+                        "images.")
 
 def apply_algorithm_for_calibration(actuatorPath, logFile=None, verbose=False):
     calibrationImageSets = list(actuatorPath.glob('*.tif*'))
@@ -96,14 +127,12 @@ def apply_algorithm_for_calibration(actuatorPath, logFile=None, verbose=False):
         defocus_steps = np.array([-2,-1,0,1,2])*DIV_MAG
 
         if im.shape[0] != im.shape[1]:
-            raise ValueError((f"Currently only supports square images."
-                              f"Consider cropping the images for the actuator at {actuator}."))
-        else:
-            if im.shape[0] > 512:
-                print("Warning: using large images will result in significantly"
-                      "slower run times. Consider using img-crop.py to crop the"
-                      "images.")
-            dsize = im.shape[0]
+            sourceDirectory = suggest_crop_for_shape()    
+
+        if im.shape[0] > 512:
+            sourceDirectory = suggest_crop_for_size()
+
+        dsize = im.shape[0]
         zern = zern_mod.Zernikes(dsize, PUPIL_SIZE, PIXEL_SIZE, num_phi)
         num_inds = len(zern.inds[0])
         ff = cache_fft(dsize, NUM_IMGS)
@@ -124,15 +153,15 @@ def apply_algorithm_for_calibration(actuatorPath, logFile=None, verbose=False):
 #####
 
 try:
-    targetDirectory = pathlib.Path(sys.argv[1])
+    sourceDirectory = pathlib.Path(sys.argv[1])
 except IndexError:
     prompt = input("No data directory given. To apply this script to data in a local directory, provide the path to the data as an argument when running the program. Alterinatively, proceed with sample data (Y/n)? ")
     if (prompt == 'n' or prompt == 'N'):
         sys.exit()
     if (prompt == 'y' or prompt == 'Y' or prompt == ''):
-        targetDirectory = pathlib.Path("sample_data")
+        sourceDirectory = pathlib.Path("sample_data")
     else:
-        targetDirectory = invalid_response()
+        sourceDirectory = invalid_response()
 
 _ = jnp.zeros((1)) # simplest way I could find to initialize jax
 
@@ -155,7 +184,7 @@ with open(logFilePath, "a") as logFile:
     log(logFile, "# Zernike coefficients of mirror calibration data from src.iterate_poisson.iter_p\n")
     log(logFile, f"coefficientList = {{}}\nc = {{}}\n")
        
-    actuatorList = [x for x in targetDirectory.iterdir() if x.is_dir()]
+    actuatorList = [x for x in sourceDirectory.iterdir() if x.is_dir()]
     for actuator in actuatorList:
         print(f"\nActuator: {actuator}")
         actuatorNumber = scan_path_name(actuator, r'\d+') # tries to extract a number from the directoryName
