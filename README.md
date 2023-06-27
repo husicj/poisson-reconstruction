@@ -1,4 +1,4 @@
-# Deformable Mirror Calibration (v0.2.0)
+# Deformable Mirror Calibration (v0.3.0)
 
 ## Description
 
@@ -23,7 +23,7 @@ git clone https://github.com/husicj/dm-calibration.git
 
 For basic usage, run the command
 ```
-python dm-calibration.py {data directory}
+python dm_calibration.py {data directory}
 ```
 This supports the directory structure `{data directory}/{actuator directories}/{multi-channel tiff images}`. Also note that digits in the actuator directory name are used to label the resulting data. Similarly, decimal numbers, potentially with a leading sign, in the image file names are assumed to be the actuator voltages for the data within the file.
 
@@ -33,15 +33,17 @@ The resulting data is output in the file "calibration\_data\_coefficients.py". W
 
 The script currently only supports square images, and its run time increases dramatically with the size of the image. To navigate both of these limitations, you can run
 ```
-python img-crop.py {data directory} {target directory}
+python img_crop.py {data directory} {target directory}
 ```
 This assumes the same directory structure as the previous script. Running this automatically crops the images in the data directory around their brightest region (such as the center of a point-like source used for calibration) and saves the results in the target directory with the same directory structure.
+
+Alternatively, you may now simply run the main script `dm_calibration.py` with uncropped images. If the data images are too large, or not square, the script will prompt the user to allow autmatic cropping of the images to be saved in a target directory.
 
 ### Sample Data
 
 To run the calibration program with the provided sample data, run the command
 ```
-python dm-calibration.py
+python dm_calibration.py
 ```
 without additional arguments.
 

@@ -4,6 +4,7 @@ except (ImportError, ModuleNotFoundError):
     import imageio
  
 import glob
+import os
 import pathlib
 import re
 
@@ -36,7 +37,7 @@ class CalibrationData:
         self.set_data_directory(dataDirectory)
         self.DO_CROP = False
         #self.cropTarget = pathlib.Path(tempfile.TemporaryDirectory().name)
-        self.cropTarget = pathlib.Path("cropped")
+        self.cropTarget = pathlib.Path(self.dataDirectory.name + "_cropped")
 
     def set_data_directory(self, dir):
         self.dataDirectory = dir
@@ -66,9 +67,17 @@ class CalibrationData:
                 print("Exiting.")
             elif (prompt == 'y' or prompt == 'Y' or prompt == ''):
                 self.DO_CROP = True
-                target = self.cropTarget
-                img_crop.crop_images(self.dataDirectory, target.name, self.actuatorList)
-                return target.name
+                target = input(f"Specify a path to saved the cropped images "
+                               f"(default {self.cropTarget}): ")
+                if target == "":
+                    target = self.cropTarget.name
+
+                if not os.path.exists(target):
+                    os.mkdir(target)
+
+                self.cropTarget = pathlib.Path(target)
+
+                img_crop.crop_images(self.dataDirectory, target, self.actuatorList)
             else:
                 print("Invalid response. Exiting.")
                 sys.exit(1)
