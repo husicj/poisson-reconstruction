@@ -14,10 +14,9 @@ import scipy
 import sys
 import tempfile
 
-import img_crop
-
 from datetime import datetime
 from src import fast_fft
+from src import file_io
 from src import image_functions
 from src import iterate_poisson
 from src import zern as zern_mod
@@ -38,12 +37,9 @@ VERBOSE = True
 num_phi = NUM_C
 Sk0 = np.pi*(PIXEL_SIZE*PUPIL_SIZE)**2
 
-DO_CROP = False
-
 #####
 ##### DEFINE FUNCTIONS
 #####
-
 
 def log(logFile, logString):
     if logFile is not None:
@@ -67,46 +63,10 @@ def invalid_response():
         sourceDirectory = invalid_response()
 
     return sourceDirectory
-    
 
-def scan_path_name(path, regex):
-    p = re.compile(regex)
-    match = p.search(str(path))
-    if match is None:
-        return None
-
-    return match.group() # returns the matched string
-
-def suggest_crop(suggestion):
-    global DO_CROP
-    if not DO_CROP:
-        prompt = input(suggestion)
-        if (prompt == 'n' or prompt == 'N'):
-            sys.exit(1)
-        elif (prompt == 'y' or prompt == 'Y' or prompt == ''):
-            DO_CROP = True
-        else:
-            print("Invalid response. Exiting.")
-            sys.exit(1)
-
-    target = tempfile.TemporaryDirectory()
-    img_crop.crop_images(sourceDirectory, target.name, actuatorList)
-    return target.name
-
-def suggest_crop_for_shape():
-    return suggest_crop(f"Currently only supports square images. "
-                        f"Would you like to automatically crop the images (Y/n)? ")
-
-def suggest_crop_for_size():
-    return suggest_crop("Warning: using large images will result in significantly "
-                        "slower run times. Consider using img-crop.py to crop the "
-                        "images.")
-
-def apply_algorithm_for_calibration(actuatorPath, logFile=None, verbose=False):
-    calibrationImageSets = list(actuatorPath.glob('*.tif*'))
-    
-    for i, zStack in enumerate(calibrationImageSets):
-        v = scan_path_name(zStack, r'[+-]?\d*([.,]\d+)|[+-]\d+')
+def apply_algorithm_for_calibration(images, index, logFile=None, verbose=False):
+    for zStack in images:
+        v = file_io.scan_path_name(zStack, r'[+-]?\d*([.,]\d+)|[+-]\d+')
         if v is None:
             print(f"Could not determine the calibration voltage for file {zStack}."
                   "Please add the voltage to the filename. Skipping.")
@@ -115,30 +75,16 @@ def apply_algorithm_for_calibration(actuatorPath, logFile=None, verbose=False):
         if verbose:
             print(f"Voltage: {str(v)} (from file '{str(zStack)}')")
 
-        ims = imageio.imread(str(zStack))
-        imgs0 = []
-        for im in ims:
-            #images cropped to a smaller region (128x128) centered around the imaged bead
-            imgs0.append(im)
-        im = imgs0[3]
-        imgs0 = imgs0[1:-1]
-        imgs0 = np.array(imgs0)
+        imgs0, centerIm = file_io.load_zStack(zStack)
 
         defocus_steps = np.array([-2,-1,0,1,2])*DIV_MAG
-
-        if im.shape[0] != im.shape[1]:
-            sourceDirectory = suggest_crop_for_shape()    
-
-        if im.shape[0] > 512:
-            sourceDirectory = suggest_crop_for_size()
-
-        dsize = im.shape[0]
+        dsize = centerIm.shape[0]
         zern = zern_mod.Zernikes(dsize, PUPIL_SIZE, PIXEL_SIZE, num_phi)
         num_inds = len(zern.inds[0])
         ff = cache_fft(dsize, NUM_IMGS)
 
         theta = image_functions.defocus(defocus_steps, zern.R, zern.inds, NA, L, REF_INDEX)
-        F = image_functions.fft2(np.ascontiguousarray(im))
+        F = image_functions.fft2(np.ascontiguousarray(centerIm))
         f = np.ones((dsize, dsize))
         c0 = np.zeros((NUM_C))+1e-10
 
@@ -164,6 +110,8 @@ except IndexError:
         sourceDirectory = invalid_response()
 
 _ = jnp.zeros((1)) # simplest way I could find to initialize jax
+data = file_io.CalibrationData(sourceDirectory)
+data.check_images()
 
 if LOG_RESULTS:
     logFilePath = 'calibration_data_coefficients.py'
@@ -179,19 +127,21 @@ else:
 #####
 
 with open(logFilePath, "a") as logFile:
-
     log(logFile, f"\n# {datetime.now()}")
     log(logFile, "# Zernike coefficients of mirror calibration data from src.iterate_poisson.iter_p\n")
     log(logFile, f"coefficientList = {{}}\nc = {{}}\n")
        
-    actuatorList = [x for x in sourceDirectory.iterdir() if x.is_dir()]
-    for actuator in actuatorList:
+    for i in range(len(data.actuatorList)):
+        actuator = data.actuatorList[i]
+        images = data.get_images(i)
+        if not images:
+            continue
+
         print(f"\nActuator: {actuator}")
-        actuatorNumber = scan_path_name(actuator, r'\d+') # tries to extract a number from the directoryName
+        actuatorNumber = file_io.scan_path_name(actuator, r'\d+') # tries to extract a number from the directoryName
         if actuatorNumber is None:
             actuatorNumber = 0
             print(f"Warning: Could not guess actuator number from directory name. Using value {actuatorNumber}")
 
         print(f"Applying Poisson noise model algorithm for actuator {actuator}...")
-
-        apply_algorithm_for_calibration(actuator, logFile=logFile, verbose=VERBOSE)
+        apply_algorithm_for_calibration(images, i, logFile=logFile, verbose=VERBOSE)
