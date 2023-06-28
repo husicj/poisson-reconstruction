@@ -57,7 +57,8 @@ class CalibrationData:
                 if centerIm.shape[0] > 512:
                     self._suggest_crop_for_size()
 
-        self.dataDirectory = self.set_data_directory(self.cropTarget)
+        if self.DO_CROP:
+            self.dataDirectory = self.set_data_directory(self.cropTarget)
 
     def _suggest_crop(self, suggestion):
         if not self.DO_CROP:
