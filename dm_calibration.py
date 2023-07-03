@@ -12,7 +12,7 @@ import pathlib
 import re
 import scipy
 import sys
-import tempfile
+import tifffile
 
 from datetime import datetime
 from src import fast_fft
@@ -89,11 +89,19 @@ def apply_algorithm_for_calibration(images, index, logFile=None, verbose=False):
         c0 = np.zeros((NUM_C))+1e-10
 
         c2, cost2, num_iter2, sss = iterate_poisson.iter_p(zern, imgs0, theta, Sk0, c0.copy(), ff, show=verbose)
+        estimate = sss[1]
 
         log(logFile, f"c[{v}] = {list(np.array(c2))}")
 
-    log(logFile, f"coefficientList[\"{actuator.parts[-1]}\"] = c.copy()\n")
+        if not os.path.exists("estimates"):
+            os.mkdir("estimates")
+        estimateFile = zStack.parts[-2] + "_" + zStack.parts[-1]
+        with open(f"estimates/{estimateFile}", "wb") as f:
+            tifffile.imwrite(f, estimate)
+            log(logFile, f"\n# Image estimate written to {f}\n")
 
+    log(logFile, f"coefficientList[\"{actuator.parts[-1]}\"] = c.copy()\n")
+        
 #####
 ##### SETUP
 #####
@@ -112,6 +120,9 @@ except IndexError:
 _ = jnp.zeros((1)) # simplest way I could find to initialize jax
 data = file_io.CalibrationData(sourceDirectory)
 data.check_images()
+
+if not os.path.exists("estimates"):
+    os.mkdir("estimates")
 
 if LOG_RESULTS:
     logFilePath = 'calibration_data_coefficients.py'
