@@ -4,8 +4,10 @@ __pycache__
 
 *.o
 
-ignore
-wisdom
-data
 calibration_data_coefficients.py
+voltage_response.csv
+data*
 estimates
+ignore
+venv
+wisdom

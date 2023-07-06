@@ -3,6 +3,7 @@ try:
 except (ImportError, ModuleNotFoundError):
     import imageio
     
+import csv
 import functools
 import glob
 import jax.numpy as jnp
@@ -32,7 +33,8 @@ NA = 1.2
 DIV_MAG = 1
 NUM_ACTUATORS = 3
 NUM_IMGS = 5
-LOG_RESULTS = True # if this is set to False, no data is recorded; meant to be used for debugging
+LOG_RESULTS = False # if this is set to False, no data is recorded; meant to be used for debugging
+CSV_LOG = True
 VERBOSE = True
 num_phi = NUM_C
 Sk0 = np.pi*(PIXEL_SIZE*PUPIL_SIZE)**2
@@ -64,7 +66,16 @@ def invalid_response():
 
     return sourceDirectory
 
+def voltage_response(voltageDict):
+    voltages = []
+    coefficients = []
+    for key, val in voltageDict.items():
+        voltages.append(float(key))
+        coefficients.append(val)
+    return np.polyfit(voltages, coefficients, 1)[1]
+
 def apply_algorithm_for_calibration(images, index, logFile=None, verbose=False):
+    c = {}
     for zStack in images:
         v = file_io.scan_path_name(zStack, r'[+-]?\d*([.,]\d+)|[+-]\d+')
         if v is None:
@@ -92,6 +103,7 @@ def apply_algorithm_for_calibration(images, index, logFile=None, verbose=False):
         estimate = sss[1]
 
         log(logFile, f"c[{v}] = {list(np.array(c2))}")
+        c[v] = np.array(c2)
 
         if not os.path.exists("estimates"):
             os.mkdir("estimates")
@@ -101,6 +113,8 @@ def apply_algorithm_for_calibration(images, index, logFile=None, verbose=False):
             log(logFile, f"\n# Image estimate written to {f}\n")
 
     log(logFile, f"coefficientList[\"{actuator.parts[-1]}\"] = c.copy()\n")
+
+    return c
         
 #####
 ##### SETUP
@@ -117,12 +131,13 @@ except IndexError:
     else:
         sourceDirectory = invalid_response()
 
-_ = jnp.zeros((1)) # simplest way I could find to initialize jax
 data = file_io.CalibrationData(sourceDirectory)
 data.check_images()
 
-if not os.path.exists("estimates"):
-    os.mkdir("estimates")
+if CSV_LOG:
+    csvFilePath = "voltage_response.csv"
+    if os.path.exists(csvFilePath):
+        raise FileExistsError(f"A file already exists at {csvFilePath}.")
 
 if LOG_RESULTS:
     logFilePath = 'calibration_data_coefficients.py'
@@ -131,7 +146,14 @@ if LOG_RESULTS:
     print(f"Logging results at {logFilePath}...")
 else:
     logFilePath = os.devnull
-    print("\nWarning: Not logging results. Change LOG_RESULTS to True to do so.\n")
+
+if (not CSV_LOG) and (not LOG_RESULTS):
+    print("\nWarning: Not logging results. Change LOG_RESULTS and/or CSV_LOG to True to do so.\n")
+
+if not os.path.exists("estimates"):
+    os.mkdir("estimates")
+
+_ = jnp.array([]) # simplest way I could find to initialize jax
 
 #####
 ##### RUN ALGORITHM
@@ -155,4 +177,11 @@ with open(logFilePath, "a") as logFile:
             print(f"Warning: Could not guess actuator number from directory name. Using value {actuatorNumber}")
 
         print(f"Applying Poisson noise model algorithm for actuator {actuator}...")
-        apply_algorithm_for_calibration(images, i, logFile=logFile, verbose=VERBOSE)
+        calData = apply_algorithm_for_calibration(images, i, logFile=logFile, verbose=VERBOSE)
+
+        calResults = voltage_response(calData)
+        if CSV_LOG:
+            with open(csvFilePath, 'a', newline='') as csvFile:
+                writer = csv.writer(csvFile)
+               
+                writer.writerow([str(actuatorNumber)] + list(calResults))
