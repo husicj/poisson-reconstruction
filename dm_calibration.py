@@ -26,16 +26,13 @@ from src import zern as zern_mod
 ##### DEFINE CONSTANTS
 #####
 
-from parameters import NUM_C, PUPIL_SIZE, REF_INDEX
-PIXEL_SIZE = 0.08
-L = 0.532
-NA = 1.2
+from parameters import NUM_C, PUPIL_SIZE, REF_INDEX, PIXEL_SIZE, L, NA
 DIV_MAG = 1
 NUM_ACTUATORS = 3
 NUM_IMGS = 5
-LOG_RESULTS = False # if this is set to False, no data is recorded; meant to be used for debugging
+LOG_RESULTS = True
 CSV_LOG = True
-VERBOSE = True
+VERBOSE = False
 num_phi = NUM_C
 Sk0 = np.pi*(PIXEL_SIZE*PUPIL_SIZE)**2
 

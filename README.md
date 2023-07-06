@@ -1,4 +1,4 @@
-# Deformable Mirror Calibration (v0.3.0)
+# Deformable Mirror Calibration (v0.3.1)
 
 ## Description
 
@@ -6,7 +6,7 @@ The goal of this project is to provide a streamlined process for calibration of 
 
 This project is currently in a partially incomplete state.
 
-(Tested with Python 3.11.3 on the most current version of Arch Linux.)
+(Tested with Python 3.11.3 on the most current version of Arch Linux as of the date of this commit.)
 
 ## Requirements
 
@@ -29,7 +29,7 @@ This supports the directory structure `{data directory}/{actuator directories}/{
 
 When the `CSV_LOG` parameter in dm_calibration.py is set to `True`, the voltage response data (based on a linear fit of the coefficient estimates for each voltage of an actuator) is output in the file "voltage_response.csv" (with units radian/Volt). Each row corresponds to the actuator indicated in column 0, and the remaining columns represent Zernike coefficients, ordered by ANSI index.
 
-Alternatively, when the `LOG_RESULTS` in dm_cailbration.py is set to `True`, the coefficients are output (rather than the slope from linear regression) in the file "calibration\_data\_coefficients.py". When this file is imported as a python module, it supplies a dictionary keyed by the actuator directory names, containing dictionaries of coefficients keyed by voltage values, and ordered according to their ANSI indexing. The current default also excludes the first three Zernike coefficients, for the polynomials of order 0 and 1.
+Alternatively, when the `LOG_RESULTS` in dm_cailbration.py is set to `True`, the coefficients are output (rather than the slope from linear regression) in the file "calibration\_data\_coefficients.py". When this file is imported as a python module, it supplies a dictionary keyed by the actuator directory names, containing dictionaries of coefficients keyed by voltage values, and ordered according to their ANSI indexing. The current default also excludes the first of the Zernike coefficients (corresponding to piston), but does calculate the coefficients for the order 1 Zernike polynomials (tip/tilt). This can be changed in the parameters.py file.
 
 ### Cropping
 
