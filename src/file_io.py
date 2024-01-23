@@ -33,6 +33,9 @@ def load_zStack(zStack):
 
     return imgs0, centerIm
 
+def write_to_png(array, name):
+    imageio.imwrite(array, extension=".png")
+
 class CalibrationData:
     def __init__(self, dataDirectory):
         self.set_data_directory(dataDirectory)
