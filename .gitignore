@@ -6,7 +6,7 @@ __pycache__
 
 calibration_data_coefficients.py
 voltage_response.csv
-data*
+data/*
 estimates
 ignore
 venv
