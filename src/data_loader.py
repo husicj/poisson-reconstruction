@@ -10,6 +10,8 @@ class MicroscopeParameters:
         self.numerical_aperture = numerical_aperture
         self.wavelength = wavelength
         self.pixel_size = pixel_size
+        self.frequency_scale_factor = pixel_size * wavelength / numerical_aperture
+        self.ID = hash((numerical_aperture, wavelength, pixel_size))
 
 class ExperimentalDataset:
     # Load experimental phase diversity data set
@@ -58,14 +60,15 @@ class ExperimentalDataset:
     def load_images(self):
         # Unaberrated image (GT.tif)
         #gt_image = imageio.imread(os.path.join(self.data_dir, 'GT.tif'))
-        gt_image = imageio.imread(os.path.join(self.data_dir, f'Iteration {self.iteration_number}/Image_estimated.tif'))
+        gt_image = imageio.imread(os.path.join(self.data_dir, f'GT.tif'))
         # Aberrated images (stored in Iteration #/Image_phasediversity.tif)
-        images = imageio.imread(os.path.join(self.data_dir, f'Iteration {self.iteration_number}/Image_phasediversity.tif'))
+        images = imageio.imread(os.path.join(self.data_dir, f'Iteration {self.iteration_number}/Stack.tif'))
         # Get first image (original image)
         aberrated_image = images[0,:,:]
         # Get phase diversity images
         phase_diversity_images = images[1:,:,:]
 
+        # return gt_image, aberrated_image, phase_diversity_images
         return gt_image, aberrated_image, phase_diversity_images
 
     def plot(self):
@@ -90,9 +93,22 @@ class ExperimentalDataset:
         ax.set_title(title)
         ax.axis('off')
 
+class MockData(ExperimentalDataset):
+    def __init__(self, imgs, phase_aberration_coeffs, phase_diversity_coeffs,
+                 iteration_number=1, microscope_parameters=MicroscopeParameters(1.2, 0.532*u.um, 0.104*u.um)):
+        self.iteration_number = iteration_number
+        self.microscope_parameters = microscope_parameters
+
+        self.gt_image = ob
+        self.gt_phase_aberration_coeffs = phase_aberration_coeffs
+        self.phase_diversities_coeffs = phase_diversity_coeffs
+
+        self.aberrated_image = imgs[0]
+        self.phase_diversity_images[1:]
+
 
 if __name__ == '__main__':
-    data_dir = '/home/Experimental Test Data/231108 AO/231108 AO0016 AstigDivs_ManualAbb'
+    data_dir = '/home/joren/documents/adaptive_optics/data/Datasets/AO/230921 AO0057 U2OS_Cell/'
     iteration_number = 1
     dataset = ExperimentalDataset(data_dir, iteration_number)
     print(dataset.gt_image.shape)

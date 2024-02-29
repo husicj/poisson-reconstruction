@@ -33,7 +33,8 @@ PUPIL_SIZE = NA/L
 DIV_MAG = 3*L # diversity magnitude - defocus distance
 MAX_ZERNIKE_DEGREE = 5 # Degree of highest order Zernike polynomials used
 OMIT_PISTON = True # Omit 0th order Zernike polynomial - almost always going to be True
-OMIT_TIP_AND_TILT = False # Omit 1st order Zernike polynomials
+OMIT_TIP_AND_TILT = True # Omit 1st order Zernike polynomials
+NUM_SKIP = int(OMIT_PISTON) + 2 * int(OMIT_TIP_AND_TILT)
 
 # Number of Zernike polynomials used
 NUM_C = get_coefficient_count(MAX_ZERNIKE_DEGREE, not OMIT_PISTON, not OMIT_TIP_AND_TILT) 

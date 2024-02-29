@@ -43,7 +43,6 @@ def defocus(z, R, inds, NA, l, RI):
     else:
         exp = z[:, None]*gamma[None,:]*1j
         return np.exp(exp)
-    
 
 def sft(im): return np.fft.fftshift(im, axes = (-1, -2))
 def fft(im): return scipy.fft.fft2(im)

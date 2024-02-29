@@ -9,8 +9,10 @@ import numpy as np
 from scipy.special import comb
 
 class Zernikes:
-    def __init__(self, dsize, pupilSize, pixelSize, num_c, numskip=3):
-        self.zern, self.R, self.Theta, self.inds = get_zern(dsize, pupilSize, pixelSize, num_c, numskip=numskip)
+    def __init__(self, dsize, pupilSize, pixelSize, num_c, numskip=3, indexing="Noll"):
+        self.indexing = indexing
+        self.zern, self.R, self.Theta, self.inds = get_zern(dsize, pupilSize, pixelSize, num_c,
+                                                            numskip=numskip, indexing = indexing)
     
 
 def zernfringe2nm(j0, numskip):  #technically fringe-1, so starting at j = 0
@@ -60,6 +62,8 @@ def zernj2nm(j, indexing = "Noll", numskip = 3):
     if indexing == "Fringe": return zernfringe2nm(j, numskip)
     if indexing == "Wyant": return zernfringe2nm(j, numskip)
     
+def zernnoll2ansi(j, offset):
+    return zernnm2ansi(zernnoll2nm(j, offset), offset)
 
 def zernfun(j, dim, pupilSize, pixelSize, indexing, rotang, numskip):
     
@@ -127,7 +131,7 @@ def normalize(j, numskip = 3):
     A = (2/eps(m))*(n+1)
     return np.float64(A)
 
-def get_zern(dsize, pupilSize, pixelSize, num_c, rotang = 0, numskip = 3, p2 = False, indexing = "ANSI"):
+def get_zern(dsize, pupilSize, pixelSize, num_c, rotang = 0, numskip = 3, p2 = False, indexing = "Noll"):
     
     zern = np.array([zernfun(i, dsize, pupilSize, pixelSize, indexing, rotang, numskip) 
                      for i in range(num_c)])

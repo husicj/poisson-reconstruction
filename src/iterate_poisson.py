@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env pytho3
 # -*- coding: utf-8 -*-
 """
 Created on Wed May 27 14:31:21 2020
@@ -88,8 +88,12 @@ def iter_p(zernikes, imgs, defocusPhases, Sk0, c, ff, show = False, eps = 1e-3):
     f *= imgs.mean()
     iterData = IterationData(f, BACKGROUND_INTENSITY, ff, c.copy())
     dc = jnp.zeros((nc))
+
     cost = np.zeros((MAX_ITER))
     sss = np.zeros((MAX_ITER))
+    fs = np.zeros((MAX_ITER, ) + imgs[0].shape)
+    fs[0] = f.copy()
+
     c_all = np.zeros((1, len(c)))
     c_all[0] = c.copy()
 
@@ -139,6 +143,7 @@ def iter_p(zernikes, imgs, defocusPhases, Sk0, c, ff, show = False, eps = 1e-3):
             
         cost[n_iter] = L1
         sss[n_iter] = norm_g
+        fs[n_iter] = f
         c_all = np.vstack((c_all, iterData.coefficients))
         
         n_iter +=1
@@ -150,7 +155,8 @@ def iter_p(zernikes, imgs, defocusPhases, Sk0, c, ff, show = False, eps = 1e-3):
     
     cost = cost[:n_iter]
     sss = sss[:n_iter]
+    fs = fs[:n_iter]
     
-    return iterData.coefficients, c_all, cost, [sss, iterData.f, end-start]
+    return iterData.coefficients, c_all, cost, [sss, iterData.f, end-start, fs]
 
 # TODO: use jax.numpy for image_functions.get_H2 and for the Fast_FFTs that are passed to this potentially as well
