@@ -36,6 +36,14 @@ class DataImage(np.ndarray):
         image = imageio.imread(path)
         return cls(image, *args)
 
+    @classmethod
+    def blank(cls, size, *args):
+        """Creates a blank image, filled with ones (using numpy.ones).
+        The *args are additional arguments passed to the __new__() method, used
+        by subclasses of DataImage."""
+        image = np.ones((size, size))
+        return cls(image, *args)
+
     def save(self, path):
         pass
 

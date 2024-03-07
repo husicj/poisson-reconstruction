@@ -65,11 +65,11 @@ class PoissonReconstruction:
         self.aberration = None
         self.break_condition_met = False
         self.diversity_set = diversity_set
-        self.image = DataImage(diversity_set.list[diversity_set.center_index])
+        self.image = DataImage.blank()
         self.iteration_count = 0
         self.iteration_info = {}
 
-        def run(self, max_iterations: int = 1000) -> None:
+    def run(self, max_iterations: int = 1000) -> None:
             """Iteratively runs the phase reconstruction algorithm until either
             self.iteration_count = max_iterations or break_condition_met
             becomes true."""
@@ -79,6 +79,6 @@ class PoissonReconstruction:
                     break
                 self.single_step()
 
-        def single_step(self) -> None:
-            """Runs a single iteration of the phase reconstruction algorithm."""
-            self.iteration_count += 1
+    def single_step(self) -> None:
+        """Runs a single iteration of the phase reconstruction algorithm."""
+        self.iteration_count += 1
