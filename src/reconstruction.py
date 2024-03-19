@@ -1,5 +1,6 @@
 from aberration import ZernikeAberration
 from diversity_set import DiversitySet
+from fast_fft import Fast_FFTs
 from image import DataImage
 
 class PoissonReconstruction:
@@ -76,14 +77,20 @@ class PoissonReconstruction:
     
     def __init__(self,
                  diversity_set: DiversitySet,
-                 estimated_coefficients_count: int = 21
+                 estimated_coefficients_count: int = 21,
+                 ffts: Fast_FFTs = None
                  ) -> None:
         self.aberration = None
         self.break_condition_met = False
         self.diversity_set = diversity_set
-        self.image = DataImage.blank()
+        self.size = diversity_set.images[0].shape[0]
+        if ffts is not None:
+            self.ffts = ffts
+        else:
+            self.ffts = Fast_FFTs(self.size, 1)
+        self.image = DataImage.blank(self.size)
         self.iteration_count = 0
-        self.iteration_info = {'cost' = [-np.inf]}
+        self.iteration_info = {'cost': [-np.inf]}
         self.step_size = 3e4
         self.step_size_reduction_factor = 0.3
         self.search_direction_vector = np.zeros((estimated_coefficients_count))
@@ -106,13 +113,15 @@ class PoissonReconstruction:
     def _line_search(self,
                      max_linesearch_iterations: int = 10
                      ) -> float:
+        """Searches for an improvement of cost function within one dimension of
+        the search space determined by self.search_direction_vector."""
         for i in range(max_linesearch_iterations):
             step = self.step_size * self.search_direction_vector
             test_coefficients = self.aberration.coefficients - step
             test_aberration = ZernikeAberration(test_coefficients)
             test_estimate = test_aberration.apply(self.image, True)
-            test_cost = (np.array(self.diversity_set.images) *
-                    np.log(test_estimate) - test_estimate).mean()
+            test_cost = (self.diversity_set * np.log(test_estimate) -
+                         test_estimate).mean()
             if test_cost > self.iteration_info['cost'][-1]:
                 # Improvement over the previous iteration
                 break
@@ -120,3 +129,9 @@ class PoissonReconstruction:
                 self.step_size *= step_size_reduction_factor
         self.aberration = test_aberration
         return test_cost
+
+    def _update_object_estimate(self):
+        """Used the aberration estimate in self.aberration to create an updated
+        estimate of the object captured in self.diversity_set."""
+        q = self.diversity_set / self.image
+        Q = q.fft(self.ffts) 

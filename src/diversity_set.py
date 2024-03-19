@@ -59,6 +59,9 @@ class DiversitySet:
         aberrations = ZernikeAberration.aberration_list(aberration_list)
         return cls(images, aberrations, data.microscope_parameters, 0)
 
+    def ffts(self):
+        pass
+
     def show(self):
         """Display a preview of the image stack."""
         fig = plt.figure(figsize=(32, 6))
@@ -75,3 +78,53 @@ class DiversitySet:
 
     def save(self):
         pass
+
+    ### Basic operations are defined here as component-wise operations ###
+    ### on the elements of self.images.                                ###
+    def __add__(self, other) -> DiversitySet:
+        ret = self
+        for i in range(self.image_count):
+            ret.images[i] = self.images[i] + other
+        return ret
+
+    def __radd__(self, other) -> DiversitySet:
+        ret = self
+        for i in range(self.image_count):
+            ret.images[i] = other + self.images[i]
+        return ret
+
+    def __sub__(self, other) -> DiversitySet:
+        ret = self
+        for i in range(self.image_count):
+            ret.images[i] = self.images[i] - other
+        return ret
+
+    def __rsub__(self, other) -> DiversitySet:
+        ret = self
+        for i in range(self.image_count):
+            ret.images[i] = other - self.images[i]
+        return ret
+
+    def __mul__(self, other) -> DiversitySet:
+        ret = self
+        for i in range(self.image_count):
+            ret.images[i] = self.images[i] * other
+        return ret
+
+    def __rmul__(self, other) -> DiversitySet:
+        ret = self
+        for i in range(self.image_count):
+            ret.images[i] = other * self.images[i]
+        return ret
+
+    def __div__(self, other) -> DiversitySet:
+        ret = self
+        for i in range(self.image_count):
+            ret.images[i] = self.images[i] / other
+        return ret
+
+    def __rdiv__(self, other) -> DiversitySet:
+        ret = self
+        for i in range(self.image_count):
+            ret.images[i] = other / self.images[i]
+        return ret

@@ -7,6 +7,8 @@ import imageio
 import matplotlib.pyplot as plt
 import numpy as np
 
+from fast_fft import Fast_FFTs
+
 if TYPE_CHECKING:
     from data_loader import MicroscopeParameters
     from aberration import Aberration
@@ -44,6 +46,20 @@ class DataImage(np.ndarray):
         image = np.ones((size, size))
         return cls(image, *args)
 
+    def fft(self,
+            ffts: Fast_FFTs = None):
+        if not hasattr(self, 'ffts'):
+            if ffts is not None:
+                self.ffts = ffts
+            else:
+                self.ffts = Fast_FFTs(self.shape[0], 1)
+        if not hasattr(self, 'fourier_transform'):
+            if self.fourier_space:
+                self.fourier_transform = self.ffts.ift2(self)
+            else:
+                self.fourier_transform = self.ffts.fft2(self)
+        return self.fourier_transform
+
     def save(self, path):
         pass
 
@@ -54,6 +70,11 @@ class DataImage(np.ndarray):
         if colorbar:
             ax.colorbar()
         plt.show()
+
+    def __array_finalize__(self, obj):
+        if obj is None: return
+        super().__array_finalize__(self, obj)
+        self.fourier_space = getattr(obj, 'fourier_space', False)
 
 class MicroscopeImage(DataImage):
     """Represents an image with associated microscope data and applied

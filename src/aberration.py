@@ -7,17 +7,24 @@ import typing
 
 from data_loader import MicroscopeParameters
 from image import DataImage, MicroscopeImage
-from src.fast_fft import Fast_FFTs
+from fast_fft import Fast_FFTs
 
 class Aberration:
     """Stores an image aberration dictated by the aberration_function and size
     provided to the constructor. This is primarily intended to be used with the
     apply() method, which applies the aberration to a given image."""
 
-    def __init__(self, aberration_function: typing.Callable, size: int
+    def __init__(self,
+                 aberration_function: typing.Callable,
+                 size: int,
+                 ffts: Fast_FFTs = None,
                  ) -> None:
         self.aberration_function = aberration_function
         self.size = size
+        if ffts is None:
+            self.ffts = Fast_FFTs(size, 1)
+        else:
+            self.ffts = ffts
         self.gpf = None
         self.psf = None
 
@@ -32,14 +39,10 @@ class Aberration:
         if image.fourier_space:
             F = image
         else:
-            if not hasattr(image, 'fft'):
-                image.fft = Fast_FFTs(image.shape[0], 1)
-            if not hasattr(image, 'fourier_transform'):
-                image.fourier_transform = image.fft(image)
-            F = image.fourier_transform
+            F = image.fft(self.ffts)
         G = F * S
         if return_real_space_image:
-            aberrated_image = G.fft.ift2(G)
+            aberrated_image = G.fft(self.ffts)
             aberrated_image.fourier_space = False
             aberrated_image.fourier_transform = G
             return aberrated_image
@@ -73,7 +76,6 @@ class Aberration:
 
     def psf(self,
             gpf: MicroscopeImage,
-            fourier: Fast_FFTs,
             ) -> MicroscopeImage:
         """Returns the point spread function s associated with the given
         generalized pupil function. The Fourier transform of the psf is also
@@ -82,11 +84,10 @@ class Aberration:
 
         if self.psf is not None:
             return self.psf
-        h = fourier.ift(gpf)
+        h = gpf.fft()
         s = np.abs(h)**2
         s.fourier_space = False
-        s.fft = fourier
-        S = s.fft.fft2(s)
+        S = s.fft(self.ffts)
         S.fourier_space = True
         s.fourier_transform = S
         self.psf = s
