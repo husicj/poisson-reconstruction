@@ -1,3 +1,4 @@
+from aberration import ZernikeAberration
 from diversity_set import DiversitySet
 from image import DataImage
 
@@ -47,6 +48,18 @@ class PoissonReconstruction:
         debugging data about the reconstruction iterations of a given instance
         of this class.
 
+    step_size
+        The starting step size to be used the next time the single_step()
+        method is called. During the line search portion of the algoritm, this
+        value is reduced by a factor of step_size_reduction_factor until a step
+        of this size in the direction of the gradient results in an improved
+        cost for the image estimate.
+
+    step_size_reduction_factor
+        The factor used the reduce the value of step_size when a step along
+        the direction of the gradient overshoots an extremum resulting in a
+        increase rather than reduction in the value of the cost function.
+
     And the following methods:
 
     run
@@ -61,13 +74,19 @@ class PoissonReconstruction:
         variety of situations independently, such as for debubgging.
     """
     
-    def __init__(self, diversity_set: DiversitySet) -> None:
+    def __init__(self,
+                 diversity_set: DiversitySet,
+                 estimated_coefficients_count: int = 21
+                 ) -> None:
         self.aberration = None
         self.break_condition_met = False
         self.diversity_set = diversity_set
         self.image = DataImage.blank()
         self.iteration_count = 0
-        self.iteration_info = {}
+        self.iteration_info = {'cost' = [-np.inf]}
+        self.step_size = 3e4
+        self.step_size_reduction_factor = 0.3
+        self.search_direction_vector = np.zeros((estimated_coefficients_count))
 
     def run(self, max_iterations: int = 1000) -> None:
             """Iteratively runs the phase reconstruction algorithm until either
@@ -81,4 +100,23 @@ class PoissonReconstruction:
 
     def single_step(self) -> None:
         """Runs a single iteration of the phase reconstruction algorithm."""
+        cost = self._line_search()
         self.iteration_count += 1
+
+    def _line_search(self,
+                     max_linesearch_iterations: int = 10
+                     ) -> float:
+        for i in range(max_linesearch_iterations):
+            step = self.step_size * self.search_direction_vector
+            test_coefficients = self.aberration.coefficients - step
+            test_aberration = ZernikeAberration(test_coefficients)
+            test_estimate = test_aberration.apply(self.image, True)
+            test_cost = (np.array(self.diversity_set.images) *
+                    np.log(test_estimate) - test_estimate).mean()
+            if test_cost > self.iteration_info['cost'][-1]:
+                # Improvement over the previous iteration
+                break
+            else:
+                self.step_size *= step_size_reduction_factor
+        self.aberration = test_aberration
+        return test_cost

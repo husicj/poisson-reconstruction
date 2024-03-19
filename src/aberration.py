@@ -105,7 +105,11 @@ class ZernikeAberration(Aberration):
     index scheme, should be padded with leading 0s before being passed to any
     of the methods of this class."""
 
-    def __init__(self, coefficients, size, indexing="Noll"):
+    def __init__(self,
+                 coefficients: np.ndarray | List,
+                 size: int,
+                 indexing: str = "Noll"
+                 ) -> None:
         if indexing == "Noll":
             self.coefficients = coefficients
         else:
