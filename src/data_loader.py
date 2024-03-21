@@ -11,7 +11,14 @@ class MicroscopeParameters:
         self.wavelength = wavelength
         self.pixel_size = pixel_size
         self.frequency_scale_factor = pixel_size * wavelength / numerical_aperture
-        self.ID = hash((numerical_aperture, wavelength, pixel_size))
+        # self.ID = hash((numerical_aperture, wavelength, pixel_size))
+
+    def __eq__(self, other):
+        return (self.numerical_aperture == other.numerical_aperature and
+                self.wavelength == other.wavelength and
+                self.pixel_size == other.pixel_size
+                )
+
 
 class ExperimentalDataset:
     # Load experimental phase diversity data set

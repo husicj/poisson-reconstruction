@@ -115,9 +115,14 @@ class PoissonReconstruction:
                      ) -> float:
         """Searches for an improvement of cost function within one dimension of
         the search space determined by self.search_direction_vector."""
+        # TODO finish updating so that the the diversity set of aberrations
+        # is used correctly
+        aberration_set = []
+        for aberration in self.diversity_set.aberrations():
+            aberration_set.append(self.aberration * aberration)
         for i in range(max_linesearch_iterations):
             step = self.step_size * self.search_direction_vector
-            test_coefficients = self.aberration.coefficients - step
+            test_coefficients = aberration_set.coefficients - step
             test_aberration = ZernikeAberration(test_coefficients)
             test_estimate = test_aberration.apply(self.image, True)
             test_cost = (self.diversity_set * np.log(test_estimate) -
@@ -133,5 +138,12 @@ class PoissonReconstruction:
     def _update_object_estimate(self):
         """Used the aberration estimate in self.aberration to create an updated
         estimate of the object captured in self.diversity_set."""
+        # Q is an intermediate term used in the updating of the object estimate
+        # representing d_k(x) / (f(x) * s_k(x)), where d_k are the diversity
+        # images, f(x) is the estimation of the true object, and s_k are the
+        # point spread functions of the applied aberrations for diveristy image
+        # k along with the estimated unknown aberration. Thus this ratio
+        # represents the discrepancy of the estimate from the captured images.
         q = self.diversity_set / self.image
         Q = q.fft(self.ffts) 
+        # TODO update object estimate, mirroring update_f

@@ -25,11 +25,12 @@ class Aberration:
             self.ffts = Fast_FFTs(size, 1)
         else:
             self.ffts = ffts
-        self.gpf = None
-        self.psf = None
+        self.microscope = None
+        self.gpf_ = None
+        self.psf_ = None
 
     def apply(self,
-              image: DataImage,
+              image: MicroscopeImage,
               return_real_space_image: bool = False
               ) -> DataImage:
         """Applies the aberration to image, returning the Fourier transform of
@@ -40,7 +41,7 @@ class Aberration:
             F = image
         else:
             F = image.fft(self.ffts)
-        G = F * S
+        G = F * self.psf(image.microscope_parameters)
         if return_real_space_image:
             aberrated_image = G.fft(self.ffts)
             aberrated_image.fourier_space = False
@@ -51,17 +52,18 @@ class Aberration:
     def gpf(self,
             microscope: MicroscopeParameters,
             ) -> MicroscopeImage:
-        """Returns the generalized pupil function associated with the aberration.
-        the microscope parameters are used to set the pixel scale."""
+        """Returns the generalized pupil function associated with the
+        aberration. The microscope parameters are used to set the pixel
+        scale."""
 
-        if self.gpf is not None:
-            return self.gpf
+        if self.gpf_ is not None and self.microscope == microscope:
+            return self.gpf_
         grid = np.mgrid[0:self.size, 0:self.size] # an array of coordinates 
         uv_grid = self._pixel_to_pupil_coordinate(grid, microscope)
         array = np.apply_along_axis(self.aberration_function, 0, uv_grid)
         gpf = MicroscopeImage(array, microscope, None)
         gpf.fourier_space = True
-        self.gpf = gpf
+        self.gpf_ = gpf
         return gpf
 
     def _pixel_to_pupil_coordinate(self,
@@ -75,23 +77,33 @@ class Aberration:
         return scale_factor * pixel_indices
 
     def psf(self,
-            gpf: MicroscopeImage,
+            microscope: MicroscopeParameters
             ) -> MicroscopeImage:
         """Returns the point spread function s associated with the given
         generalized pupil function. The Fourier transform of the psf is also
         computed, and returned as an attribute (.fourier_transform) of the
         returned psf."""
 
-        if self.psf is not None:
-            return self.psf
-        h = gpf.fft()
+        if self.psf_ is not None and self.microscope == microscope:
+            return self.psf_
+        h = self.gpf(microscope).fft()
         s = np.abs(h)**2
         s.fourier_space = False
         S = s.fft(self.ffts)
         S.fourier_space = True
         s.fourier_transform = S
-        self.psf = s
+        self.psf_ = s
+        self.microscope = microscope
         return s
+
+    def __mul__(self, other):
+        def combined_aberration_function(x, y):
+            return (self.aberration_function(x,y) +
+                    other.aberration_function(x,y))
+        return Aberration(combined_aberration_function,
+                          self.size,
+                          self.FFTs)
+        
 
 class ZernikeAberration(Aberration):
     """Stores an image aberration specified by coefficients of Zernike

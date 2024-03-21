@@ -59,7 +59,15 @@ class DiversitySet:
         aberrations = ZernikeAberration.aberration_list(aberration_list)
         return cls(images, aberrations, data.microscope_parameters, 0)
 
+    def aberrations(self):
+        """Returns the applied aberrations of the diverisity images as a list."""
+        aberration_list = []
+        for image in self.images:
+            aberration_list.append(image.aberration)
+        return aberration_list
+
     def ffts(self):
+        """Returns the Fourier transforms of each of the diversity images."""
         pass
 
     def show(self):
