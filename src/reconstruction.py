@@ -115,18 +115,19 @@ class PoissonReconstruction:
                      ) -> float:
         """Searches for an improvement of cost function within one dimension of
         the search space determined by self.search_direction_vector."""
-        # TODO finish updating so that the the diversity set of aberrations
-        # is used correctly
         aberration_set = []
         for aberration in self.diversity_set.aberrations():
             aberration_set.append(self.aberration * aberration)
         for i in range(max_linesearch_iterations):
             step = self.step_size * self.search_direction_vector
-            test_coefficients = aberration_set.coefficients - step
-            test_aberration = ZernikeAberration(test_coefficients)
-            test_estimate = test_aberration.apply(self.image, True)
-            test_cost = (self.diversity_set * np.log(test_estimate) -
-                         test_estimate).mean()
+            # TODO confirm that the following - sign is correct
+            test_cost = 0
+            for i, aberration in enumerate(aberration_set):
+                test_coefficients = aberration.coefficients - step
+                test_aberration = ZernikeAberration(test_coefficients)
+                test_estimate = test_aberration.apply(self.image, True)
+                test_cost += (self.diversity_set[i] * np.log(test_estimate) -
+                             test_estimate).mean()
             if test_cost > self.iteration_info['cost'][-1]:
                 # Improvement over the previous iteration
                 break
