@@ -57,7 +57,7 @@ class DiversitySet:
         data = data_loader.ExperimentalDataset(data_dir, iteration_number)
         images = np.insert(data.phase_diversity_images, 0, data.aberrated_image, axis=0)
         size = images[0].shape[0]
-        aberration_list = np.insert(data.phase_diversities_coeffs, 0, None, axis = 0)
+        aberration_list = np.pad(data.phase_diversities_coeffs, ((1,0), (3,0)))
         aberrations = ZernikeAberration.aberration_list(aberration_list, size)
         return cls(images, aberrations, data.microscope_parameters, 0)
 

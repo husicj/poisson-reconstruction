@@ -97,13 +97,19 @@ class Aberration:
         return s
 
     def __mul__(self, other):
+        if other is None:
+            return self
         def combined_aberration_function(x, y):
             return (self.aberration_function(x,y) +
                     other.aberration_function(x,y))
         return Aberration(combined_aberration_function,
                           self.size,
                           self.FFTs)
-        
+
+    def __rmul__(self, other):
+        if other is None:
+            return self
+        self.__mul__(other)
 
 class ZernikeAberration(Aberration):
     """Stores an image aberration specified by coefficients of Zernike

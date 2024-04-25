@@ -138,8 +138,9 @@ class PoissonReconstruction:
             # TODO confirm that the following - sign is correct
             test_cost = 0
             for i, aberration in enumerate(aberration_set):
+                print(f"{len(aberration.coefficients)=},\n{len(step)=}")
                 test_coefficients = aberration.coefficients - step
-                test_aberration = ZernikeAberration(test_coefficients)
+                test_aberration = ZernikeAberration(test_coefficients, self.size)
                 test_estimate = test_aberration.apply(self.image, True)
                 test_cost += (self.diversity_set[i] * np.log(test_estimate) -
                              test_estimate).mean()
@@ -177,3 +178,4 @@ if __name__ == "__main__":
     path = '/home/joren/documents/adaptive_optics/data/Datasets/AO/230921 AO0057 U2OS_Cell/'
     diversity_set = DiversitySet.load_with_data_loader(path)
     recon = PoissonReconstruction(diversity_set)
+    recon.single_step()
