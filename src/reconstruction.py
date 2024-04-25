@@ -1,3 +1,5 @@
+import numpy as np
+
 from aberration import ZernikeAberration
 from diversity_set import DiversitySet
 from fast_fft import Fast_FFTs
@@ -27,6 +29,11 @@ class PoissonReconstruction:
         the run method before the maximum number of iterations. It is then
         reset to False.
 
+    center_coordinate
+        The array coordinate for the center of square images of size self.size.
+        This is a two component tuple, each the value of the nearest integer to
+        half of self.size.
+
     diversity_set
         An instance of diversity_set.DiversitySet, this attribute contains the
         set of phase diversity images that are used as the basis of the
@@ -48,6 +55,10 @@ class PoissonReconstruction:
         A dictionary containing a number of additional supplementary and
         debugging data about the reconstruction iterations of a given instance
         of this class.
+
+    size
+        The size of the data images, and therefore of the image that is to be
+        reconstructed. This is the full length of the side of the square images.
 
     step_size
         The starting step size to be used the next time the single_step()
@@ -73,6 +84,7 @@ class PoissonReconstruction:
         Runs a single iteration of the maximum likelihood estimation algorithm.
         This is used to implement the run method, but can also be used in a
         variety of situations independently, such as for debubgging.
+
     """
     
     def __init__(self,
@@ -84,6 +96,7 @@ class PoissonReconstruction:
         self.break_condition_met = False
         self.diversity_set = diversity_set
         self.size = diversity_set.images[0].shape[0]
+        self.center_coordinate = (self.size//2, self.size//2)
         if ffts is not None:
             self.ffts = ffts
         else:
@@ -108,6 +121,8 @@ class PoissonReconstruction:
     def single_step(self) -> None:
         """Runs a single iteration of the phase reconstruction algorithm."""
         cost = self._line_search()
+        self._update_object_estimate()
+        self.iteration_info['cost'].append(cost)
         self.iteration_count += 1
 
     def _line_search(self,
@@ -136,7 +151,7 @@ class PoissonReconstruction:
         self.aberration = test_aberration
         return test_cost
 
-    def _update_object_estimate(self):
+    def _update_object_estimate(self) -> None:
         """Used the aberration estimate in self.aberration to create an updated
         estimate of the object captured in self.diversity_set."""
         # Q is an intermediate term used in the updating of the object estimate
@@ -145,6 +160,20 @@ class PoissonReconstruction:
         # point spread functions of the applied aberrations for diveristy image
         # k along with the estimated unknown aberration. Thus this ratio
         # represents the discrepancy of the estimate from the captured images.
-        q = self.diversity_set / self.image
-        Q = q.fft(self.ffts) 
-        # TODO update object estimate, mirroring update_f
+        update_factor = DataImage.blank(self.size)
+        normalization_factor = 0
+        for k in range(len(self.diversity_set)):
+            aberration = self.aberration * self.diversity_set.aberrations()[k]
+            psf = aberration.psf()
+            q = self.diversity_set[k] / (psf * self.image)
+            Q = q.fft(self.ffts) 
+            update_factor_term_transform = np.conj(psf) * Q
+            update_factor += update_factor_term_transform.fft(self.ffts)
+            normalization_factor += psf[self.center_coordinate]
+        self.image *= update_factor / normalization_factor
+
+if __name__ == "__main__":
+    # TODO change the path variable to be supplied by cl argument
+    path = '/home/joren/documents/adaptive_optics/data/Datasets/AO/230921 AO0057 U2OS_Cell/'
+    diversity_set = DiversitySet.load_with_data_loader(path)
+    recon = PoissonReconstruction(diversity_set)
