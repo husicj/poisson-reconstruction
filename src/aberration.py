@@ -131,7 +131,8 @@ class ZernikeAberration(Aberration):
 
     @classmethod
     def aberration_list(cls,
-                        aberrations: np.ndarray | List[np.ndarray]
+                        aberrations: np.ndarray | List[np.ndarray],
+                        size: int
                         ) -> List[ZernikeAberration]:
         """A class method that takes an array or list of sets of Zernike
         polynomial coefficients and returns a list of objects of the called
@@ -139,7 +140,7 @@ class ZernikeAberration(Aberration):
 
         list_ = []
         for aberration in aberrations:
-            list.append(cls(aberration))
+            list_.append(cls(aberration, size))
         return list_
 
     def coefficients_to_function(self,

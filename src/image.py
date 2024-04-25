@@ -73,7 +73,7 @@ class DataImage(np.ndarray):
 
     def __array_finalize__(self, obj):
         if obj is None: return
-        super().__array_finalize__(self, obj)
+        super().__array_finalize__(obj)
         self.fourier_space = getattr(obj, 'fourier_space', False)
 
 class MicroscopeImage(DataImage):
@@ -101,6 +101,6 @@ class MicroscopeImage(DataImage):
 
     def __array_finalize__(self, obj):
         if obj is None: return
-        super().__array_finalize__(self, obj)
+        super().__array_finalize__(obj)
         self.microscope_parameters = getattr(obj, 'microscope_parameters', None)
         self.aberration = getattr(obj, 'aberration', None)

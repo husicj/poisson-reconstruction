@@ -1,11 +1,12 @@
 import imageio
+import numpy as np
 
 import data_loader
 
-from aberration import Aberration
+from aberration import Aberration, ZernikeAberration
 from data_loader import MicroscopeParameters
 from image import MicroscopeImage
-from typing import List
+from typing import List, Self
 
 class DiversitySet:
     """This class contains a set of images, represented as a list of instances
@@ -27,13 +28,13 @@ class DiversitySet:
                  aberrations: List[Aberration],
                  microscope_parameters: None | MicroscopeParameters = None,
                  center_index: int = 0):
-        if len(aberrations) != images.shape[2]:
-            print("Warning: number of aberrations provided not equal to number"
-                  " of images.")
+        if len(aberrations) != images.shape[0]:
+            print(f"Warning: number of aberrations provided ({len(aberrations)})"
+                  f" not equal to number of images ({images.shape[0]}).")
         self.microscope_parameters = microscope_parameters
         self.images = []
-        for i in range(images.shape[2]):
-            image = MicroscopeImage(images[:,:,i], microscope_parameters, aberrations[i])
+        for i in range(images.shape[0]):
+            image = MicroscopeImage(images[i], microscope_parameters, aberrations[i])
             self.images.append(image)
         self.image_count = len(self.images)
         self.center_index = center_index
@@ -55,8 +56,9 @@ class DiversitySet:
         """Loads data from a specific existing file structure scheme."""
         data = data_loader.ExperimentalDataset(data_dir, iteration_number)
         images = np.insert(data.phase_diversity_images, 0, data.aberrated_image, axis=0)
+        size = images[0].shape[0]
         aberration_list = np.insert(data.phase_diversities_coeffs, 0, None, axis = 0)
-        aberrations = ZernikeAberration.aberration_list(aberration_list)
+        aberrations = ZernikeAberration.aberration_list(aberration_list, size)
         return cls(images, aberrations, data.microscope_parameters, 0)
 
     def aberrations(self):
@@ -89,49 +91,49 @@ class DiversitySet:
 
     ### Basic operations are defined here as component-wise operations ###
     ### on the elements of self.images.                                ###
-    def __add__(self, other) -> DiversitySet:
+    def __add__(self, other: Self) -> Self:
         ret = self
         for i in range(self.image_count):
             ret.images[i] = self.images[i] + other
         return ret
 
-    def __radd__(self, other) -> DiversitySet:
+    def __radd__(self, other: Self) -> Self:
         ret = self
         for i in range(self.image_count):
             ret.images[i] = other + self.images[i]
         return ret
 
-    def __sub__(self, other) -> DiversitySet:
+    def __sub__(self, other: Self) -> Self:
         ret = self
         for i in range(self.image_count):
             ret.images[i] = self.images[i] - other
         return ret
 
-    def __rsub__(self, other) -> DiversitySet:
+    def __rsub__(self, other: Self) -> Self:
         ret = self
         for i in range(self.image_count):
             ret.images[i] = other - self.images[i]
         return ret
 
-    def __mul__(self, other) -> DiversitySet:
+    def __mul__(self, other: Self) -> Self:
         ret = self
         for i in range(self.image_count):
             ret.images[i] = self.images[i] * other
         return ret
 
-    def __rmul__(self, other) -> DiversitySet:
+    def __rmul__(self, other: Self) -> Self:
         ret = self
         for i in range(self.image_count):
             ret.images[i] = other * self.images[i]
         return ret
 
-    def __div__(self, other) -> DiversitySet:
+    def __div__(self, other: Self) -> Self:
         ret = self
         for i in range(self.image_count):
             ret.images[i] = self.images[i] / other
         return ret
 
-    def __rdiv__(self, other) -> DiversitySet:
+    def __rdiv__(self, other: Self) -> Self:
         ret = self
         for i in range(self.image_count):
             ret.images[i] = other / self.images[i]
