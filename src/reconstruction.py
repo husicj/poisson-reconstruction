@@ -3,7 +3,7 @@ import numpy as np
 from aberration import ZernikeAberration
 from diversity_set import DiversitySet
 from fast_fft import Fast_FFTs
-from image import DataImage
+from image import DataImage, MicroscopeImage
 
 class PoissonReconstruction:
     """
@@ -101,7 +101,9 @@ class PoissonReconstruction:
             self.ffts = ffts
         else:
             self.ffts = Fast_FFTs(self.size, 1)
-        self.image = DataImage.blank(self.size)
+        self.image = MicroscopeImage.blank(self.size,
+                                           diversity_set.microscope_parameters,
+                                           self.aberration)
         self.iteration_count = 0
         self.iteration_info = {'cost': [-np.inf]}
         self.step_size = 3e4
@@ -138,7 +140,6 @@ class PoissonReconstruction:
             # TODO confirm that the following - sign is correct
             test_cost = 0
             for i, aberration in enumerate(aberration_set):
-                print(f"{len(aberration.coefficients)=},\n{len(step)=}")
                 test_coefficients = aberration.coefficients - step
                 test_aberration = ZernikeAberration(test_coefficients, self.size)
                 test_estimate = test_aberration.apply(self.image, True)

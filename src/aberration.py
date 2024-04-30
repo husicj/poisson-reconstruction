@@ -134,6 +134,7 @@ class ZernikeAberration(Aberration):
         else:
             self.coefficients = coefficients_to_noll(coefficients, indexing)
         aberration_function = self.coefficients_to_function(self.coefficients)
+        super().__init__(aberration_function, size)
 
     @classmethod
     def aberration_list(cls,
