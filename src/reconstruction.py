@@ -108,12 +108,13 @@ class PoissonReconstruction:
         self.iteration_info = {'cost': [-np.inf]}
         self.step_size = 3e4
         self.step_size_reduction_factor = 0.3
-        self.search_direction_vector = np.zeros((estimated_coefficients_count))
+        self.search_direction_vector = np.ones((estimated_coefficients_count))
 
     def run(self, max_iterations: int = 1000) -> None:
             """Iteratively runs the phase reconstruction algorithm until either
             self.iteration_count = max_iterations or break_condition_met
             becomes true."""
+
             while self.iteration_count < max_iterations:
                 if self.break_condition_met:
                     self.break_condition_met = False
@@ -147,7 +148,8 @@ class PoissonReconstruction:
                 test_aberration = ZernikeAberration(test_coefficients, self.size)
                 test_estimate = test_aberration.apply(self.image, True)
                 test_cost += (self.diversity_set.images[i] *
-                              np.log(test_estimate) - test_estimate).mean()
+                              np.log(test_estimate) - test_estimate).mean()[()]
+                print(f"after: {test_cost=}")
             if test_cost > self.iteration_info['cost'][-1]:
                 # Improvement over the previous iteration
                 break
@@ -159,14 +161,14 @@ class PoissonReconstruction:
     def _update_object_estimate(self) -> None:
         """Used the aberration estimate in self.aberration to create an updated
         estimate of the object captured in self.diversity_set."""
+
         # Q is an intermediate term used in the updating of the object estimate
         # representing d_k(x) / (f(x) * s_k(x)), where d_k are the diversity
         # images, f(x) is the estimation of the true object, and s_k are the
         # point spread functions of the applied aberrations for diveristy image
         # k along with the estimated unknown aberration. Thus this ratio
         # represents the discrepancy of the estimate from the captured images.
-        update_factor = DataImage.blank(self.size).view(dtype='complex128')
-        print(f"{update_factor.shape=}")
+        update_factor = DataImage.blank(self.size)#.view(dtype='complex128')
         normalization_factor = 0
         for k in range(self.diversity_set.image_count):
             aberration = self.aberration * self.diversity_set.aberrations()[k]
@@ -174,16 +176,15 @@ class PoissonReconstruction:
             q = self.diversity_set.images[k] / (psf * self.image)
             Q = q.fft(self.ffts) 
             update_factor_term_transform = np.conj(psf) * Q
-            print(f"{update_factor_term_transform.shape=}")
-            print(f"{update_factor_term_transform.fft(self.ffts).shape=}")
-            update_factor += update_factor_term_transform.fft(self.ffts)
+            # TODO check if this ignoring of imaginary components makes sense
+            update_factor += update_factor_term_transform.fft(self.ffts).real
             normalization_factor += psf[self.center_coordinate]
         self.image *= update_factor / normalization_factor
 
 if __name__ == "__main__":
     # TODO change the path variable to be supplied by cl argument
-    path = '/home/husicj/adaptive_optics/data/Datasets/AO/230921 AO0057 U2OS_Cell/'
-    # path = '/home/joren/documents/adaptive_optics/data/Datasets/AO/230921 AO0057 U2OS_Cell/'
+    # path = '/home/husicj/adaptive_optics/data/Datasets/AO/230921 AO0057 U2OS_Cell/'
+    path = '/home/joren/documents/adaptive_optics/data/Datasets/AO/230921 AO0057 U2OS_Cell/'
     diversity_set = DiversitySet.load_with_data_loader(path)
     recon = PoissonReconstruction(diversity_set)
     recon.single_step()
