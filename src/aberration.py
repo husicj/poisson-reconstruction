@@ -5,6 +5,8 @@ import functools
 import scipy
 import typing
 
+from astropy import units
+
 from data_loader import MicroscopeParameters
 from image import DataImage, MicroscopeImage
 from fast_fft import Fast_FFTs
@@ -60,8 +62,6 @@ class Aberration:
             return self.gpf_
         grid = np.mgrid[0:self.size, 0:self.size] # an array of coordinates 
         uv_grid = self._pixel_to_pupil_coordinate(grid, microscope)
-        print(uv_grid.shape)
-        # array = np.apply_along_axis(self.aberration_function, 0, uv_grid)
         array = self.aberration_function(uv_grid[0], uv_grid[1])
         gpf = MicroscopeImage(array, microscope, None)
         gpf.fourier_space = True
@@ -75,7 +75,7 @@ class Aberration:
         """Converts a pixel index value to a pupil plane coordinate,
         based on the relevant microscope parameters."""
 
-        scale_factor = int(microscope.frequency_scale_factor)
+        scale_factor = microscope.frequency_scale_factor.value
         return scale_factor * pixel_indices
 
     def psf(self,
@@ -88,8 +88,11 @@ class Aberration:
 
         if self.psf_ is not None and self.microscope == microscope:
             return self.psf_
+        print(f"{type(self.gpf(microscope))=}")
         h = self.gpf(microscope).fft()
+        print(f"{type(h)=}")
         s = np.abs(h)**2
+        print(f"{type(s)=}")
         s.fourier_space = False
         S = s.fft(self.ffts)
         S.fourier_space = True

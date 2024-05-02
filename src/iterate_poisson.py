@@ -160,3 +160,4 @@ def iter_p(zernikes, imgs, defocusPhases, Sk0, c, ff, show = False, eps = 1e-3):
     return iterData.coefficients, c_all, cost, [sss, iterData.f, end-start, fs]
 
 # TODO: use jax.numpy for image_functions.get_H2 and for the Fast_FFTs that are passed to this potentially as well
+
