@@ -60,7 +60,9 @@ class Aberration:
             return self.gpf_
         grid = np.mgrid[0:self.size, 0:self.size] # an array of coordinates 
         uv_grid = self._pixel_to_pupil_coordinate(grid, microscope)
-        array = np.apply_along_axis(self.aberration_function, 0, uv_grid)
+        print(uv_grid.shape)
+        # array = np.apply_along_axis(self.aberration_function, 0, uv_grid)
+        array = self.aberration_function(uv_grid[0], uv_grid[1])
         gpf = MicroscopeImage(array, microscope, None)
         gpf.fourier_space = True
         self.gpf_ = gpf
@@ -73,7 +75,7 @@ class Aberration:
         """Converts a pixel index value to a pupil plane coordinate,
         based on the relevant microscope parameters."""
 
-        scale_factor = microscope.frequency_scale_factor
+        scale_factor = int(microscope.frequency_scale_factor)
         return scale_factor * pixel_indices
 
     def psf(self,
@@ -160,7 +162,7 @@ class ZernikeAberration(Aberration):
         for j, coefficient in enumerate(coefficients):
             n, m = self.zernnoll2nm(j, numskip=0)
             func = functools.partial(self.zernike, n, m)
-            zernike_terms_list.append((func, coefficient))
+            zernike_terms_list.append((coefficient, func))
         def aberration_function(x, y):
             acc = 0
             for coefficient, func in zernike_terms_list:
@@ -174,7 +176,7 @@ class ZernikeAberration(Aberration):
         """Converts coefficients from various indexing schemes of the Zernike
         polynomials to the Noll ordering."""
 
-        print(f"{self}.coefficients_to_noll() currently does nothing.")
+        print(f"{self}.coefficients_to_noll() has not been implemented.")
 
     def noll(self):
         pass

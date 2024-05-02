@@ -176,7 +176,8 @@ class PoissonReconstruction:
 
 if __name__ == "__main__":
     # TODO change the path variable to be supplied by cl argument
-    path = '/home/joren/documents/adaptive_optics/data/Datasets/AO/230921 AO0057 U2OS_Cell/'
+    path = '/home/husicj/adaptive_optics/data/Datasets/AO/230921 AO0057 U2OS_Cell/'
+    # path = '/home/joren/documents/adaptive_optics/data/Datasets/AO/230921 AO0057 U2OS_Cell/'
     diversity_set = DiversitySet.load_with_data_loader(path)
     recon = PoissonReconstruction(diversity_set)
     recon.single_step()
