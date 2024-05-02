@@ -14,6 +14,8 @@ class MicroscopeParameters:
         # self.ID = hash((numerical_aperture, wavelength, pixel_size))
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return (self.numerical_aperture == other.numerical_aperature and
                 self.wavelength == other.wavelength and
                 self.pixel_size == other.pixel_size

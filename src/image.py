@@ -55,10 +55,10 @@ class DataImage(np.ndarray):
                 self.ffts = Fast_FFTs(self.shape[0], 1)
         if not hasattr(self, 'fourier_transform'):
             if self.fourier_space:
-                self.set_fourier_transform(self.ffts.ift(self))
+                self.fourier_transform = self.ffts.ift(self)
             else:
-                self.set_fourier_transform(self.ffts.fft(self))
-        return self.fourier_transform
+                self.fourier_transform = self.ffts.fft(self)
+        return self.fourier_transform.view(DataImage)
 
     def save(self, path):
         pass

@@ -83,16 +83,13 @@ class Aberration:
             ) -> MicroscopeImage:
         """Returns the point spread function s associated with the given
         generalized pupil function. The Fourier transform of the psf is also
-        computed, and returned as an attribute (.fourier_transform) of the
+        computed, and returned as an attribute (fourier_transform) of the
         returned psf."""
 
         if self.psf_ is not None and self.microscope == microscope:
             return self.psf_
-        print(f"{type(self.gpf(microscope))=}")
         h = self.gpf(microscope).fft()
-        print(f"{type(h)=}")
         s = np.abs(h)**2
-        print(f"{type(s)=}")
         s.fourier_space = False
         S = s.fft(self.ffts)
         S.fourier_space = True
@@ -109,7 +106,7 @@ class Aberration:
                     other.aberration_function(x,y))
         return Aberration(combined_aberration_function,
                           self.size,
-                          self.FFTs)
+                          self.ffts)
 
     def __rmul__(self, other):
         if other is None:
