@@ -7,6 +7,7 @@ __pycache__
 calibration_data_coefficients.py
 voltage_response.csv
 data/*
+data_dir
 data_cropped
 estimates
 ignore

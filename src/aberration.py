@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 import numpy as np
 import functools
 import scipy
@@ -113,6 +115,15 @@ class Aberration:
             return self
         self.__mul__(other)
 
+    def __sizeof__(self):
+        size = 0
+        for attribute in dir(self):
+            if isinstance(attribute, np.ndarray):
+                size += sys.getsizeof(attribute.base)
+            else:
+                size += sys.getsizeof(attribute)
+        return size
+
 class ZernikeAberration(Aberration):
     """Stores an image aberration specified by coefficients of Zernike
     polynomials and the size provided to the constructor.
@@ -129,6 +140,7 @@ class ZernikeAberration(Aberration):
     def __init__(self,
                  coefficients: np.ndarray | List,
                  size: int,
+                 ffts: Fast_FFTs = None,
                  indexing: str = "Noll"
                  ) -> None:
         if indexing == "Noll":
@@ -136,12 +148,13 @@ class ZernikeAberration(Aberration):
         else:
             self.coefficients = coefficients_to_noll(coefficients, indexing)
         aberration_function = self.coefficients_to_function(self.coefficients)
-        super().__init__(aberration_function, size)
+        super().__init__(aberration_function, size, ffts)
 
     @classmethod
     def aberration_list(cls,
                         aberrations: np.ndarray | List[np.ndarray],
-                        size: int
+                        size: int,
+                        ffts: Fast_FFTs = None,
                         ) -> List[ZernikeAberration]:
         """A class method that takes an array or list of sets of Zernike
         polynomial coefficients and returns a list of objects of the called
@@ -184,6 +197,11 @@ class ZernikeAberration(Aberration):
     def ansi(self):
         pass
 
+    def __mul__(self, other):
+        if isinstance(other, type(self)):
+            coefficients = self.coefficients + other.coefficients
+            return ZernikeAberration(coefficients, self.size)
+        
     #####
     # The following functions are used to calculate the value of
     # a given Zerike polynomial at at given pupil plane coordinate (x , y)

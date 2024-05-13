@@ -6,10 +6,14 @@ Created on Sun Oct 18 19:13:56 2020
 @author: nikolaj
 """
 
+import inspect
+import os
+import sys
 
 import pyfftw
-import os
 import pathlib
+
+from bin.mem_profile import show_stack
 
 class Fast_FFTs():
     def __init__(self, dsize, num_imgs, num_threads = 1):
@@ -63,7 +67,11 @@ class Fast_FFTs():
                           direction='FFTW_BACKWARD', normalise_idft = True)
         
         if export_wisdom: self.write_wisdom(dsize, num_imgs, nt)
-        
+
+        print("New FFTs calculated!")
+        show_stack()
+
+       
     def fft(self, im):
         nd = len(im.shape)
         if nd == 2:
@@ -140,4 +148,8 @@ class Fast_FFTs():
         else:
             return -1
     
-    
+    def __sizeof__(self):
+        size = 0
+        for attribute in dir(self):
+            size += sys.getsizeof(attribute)
+        return size   

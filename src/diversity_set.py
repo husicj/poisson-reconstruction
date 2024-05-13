@@ -1,3 +1,5 @@
+import sys
+
 import imageio
 import numpy as np
 
@@ -5,8 +7,10 @@ import data_loader
 
 from aberration import Aberration, ZernikeAberration
 from data_loader import MicroscopeParameters
+from fast_fft import Fast_FFTs
 from image import MicroscopeImage
-from typing import List, Self
+from typing import List, Self, TYPE_CHECKING
+
 
 class DiversitySet:
     """This class contains a set of images, represented as a list of instances
@@ -24,17 +28,24 @@ class DiversitySet:
     constructor respectively."""
 
     def __init__(self,
-                 images: np.ndarray,
-                 aberrations: List[Aberration],
+                 images:                np.ndarray,
+                 aberrations:           List[Aberration],
                  microscope_parameters: None | MicroscopeParameters = None,
-                 center_index: int = 0):
+                 center_index:          int = 0,
+                 ffts:                  None | Fast_FFTs = None):
         if len(aberrations) != images.shape[0]:
             print(f"Warning: number of aberrations provided ({len(aberrations)})"
                   f" not equal to number of images ({images.shape[0]}).")
         self.microscope_parameters = microscope_parameters
+        self.ffts = ffts
         self.images = []
         for i in range(images.shape[0]):
-            image = MicroscopeImage(images[i], microscope_parameters, aberrations[i])
+            print(f"{aberrations[i]=}")
+            image = MicroscopeImage(images[i],
+                                    microscope_parameters,
+                                    aberrations[i],
+                                    ffts)
+            print(f"{image.aberration=}\n\n")
             self.images.append(image)
         self.image_count = len(self.images)
         self.center_index = center_index
@@ -42,23 +53,27 @@ class DiversitySet:
     @classmethod
     def load(cls,
              path,
-             aberrations: np.ndarray | List[Aberration],
+             aberrations:           np.ndarray | List[Aberration],
              microscope_parameters: None | MicroscopeParameters = None,
-             center_index: int = 0):
+             center_index:          int = 0,
+             ffts:                  None | Fast_FFTs = None):
         """Loads a multi-channel image where each channel corresponds to one of the provided aberrations."""
         images = imageio.imread(path)
         if images.ndim == 2:
             raise TypeError(f"The image at {path} has only a single channel.")
-        return cls(images, aberrations, center_index)
+        return cls(images, aberrations, center_index, ffts)
 
     @classmethod
-    def load_with_data_loader(cls, data_dir, iteration_number=1):
+    def load_with_data_loader(cls,
+                              data_dir, 
+                              iteration_number: int = 1,
+                              ffts: None | Fast_FFTs = None):
         """Loads data from a specific existing file structure scheme."""
         data = data_loader.ExperimentalDataset(data_dir, iteration_number)
         images = np.insert(data.phase_diversity_images, 0, data.aberrated_image, axis=0)
         size = images[0].shape[0]
         aberration_list = np.pad(data.phase_diversities_coeffs, ((1,0), (3,0)))
-        aberrations = ZernikeAberration.aberration_list(aberration_list, size)
+        aberrations = ZernikeAberration.aberration_list(aberration_list, size, ffts)
         return cls(images, aberrations, data.microscope_parameters, 0)
 
     def aberrations(self):
@@ -138,3 +153,12 @@ class DiversitySet:
         for i in range(self.image_count):
             ret.images[i] = other / self.images[i]
         return ret
+
+    def __sizeof__(self):
+        size = sum([sys.getsizeof(image) for image in self.images])
+        for attribute in dir(self):
+            if isinstance(attribute, np.ndarray):
+                size += sys.getsizeof(attribute.base)
+            else:
+                size += sys.getsizeof(attribute)
+        return size
