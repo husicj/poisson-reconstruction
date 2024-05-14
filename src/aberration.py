@@ -65,7 +65,7 @@ class Aberration:
         grid = np.mgrid[0:self.size, 0:self.size] # an array of coordinates 
         uv_grid = self._pixel_to_pupil_coordinate(grid, microscope)
         array = self.aberration_function(uv_grid[0], uv_grid[1])
-        gpf = MicroscopeImage(array, microscope, None)
+        gpf = MicroscopeImage(array, self.ffts, microscope, None)
         gpf.fourier_space = True
         self.gpf_ = gpf
         return gpf
@@ -200,7 +200,7 @@ class ZernikeAberration(Aberration):
     def __mul__(self, other):
         if isinstance(other, type(self)):
             coefficients = self.coefficients + other.coefficients
-            return ZernikeAberration(coefficients, self.size)
+            return ZernikeAberration(coefficients, self.size, self.ffts)
         
     #####
     # The following functions are used to calculate the value of

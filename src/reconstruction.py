@@ -146,7 +146,6 @@ class PoissonReconstruction:
 
         aberration_set = []
         for aberration in self.diversity_set.aberrations():
-            print(aberration)
             aberration_set.append(self.aberration * aberration)
         for _ in range(max_linesearch_iterations):
             test_cost = 0
@@ -154,7 +153,9 @@ class PoissonReconstruction:
                 step = self.step_size * self.search_direction_vector
                 # TODO confirm that the following - sign is correct
                 test_coefficients = aberration.coefficients - step
-                test_aberration = ZernikeAberration(test_coefficients, self.size)
+                test_aberration = ZernikeAberration(test_coefficients,
+                                                    self.size,
+                                                    self.ffts)
                 test_estimate = test_aberration.apply(self.image, True)
                 test_cost += (self.diversity_set.images[i] *
                               np.log(test_estimate) - test_estimate).mean()[()]

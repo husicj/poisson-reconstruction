@@ -42,9 +42,9 @@ class DiversitySet:
         for i in range(images.shape[0]):
             print(f"{aberrations[i]=}")
             image = MicroscopeImage(images[i],
+                                    ffts,
                                     microscope_parameters,
-                                    aberrations[i],
-                                    ffts)
+                                    aberrations[i])
             print(f"{image.aberration=}\n\n")
             self.images.append(image)
         self.image_count = len(self.images)

@@ -54,12 +54,12 @@ class DataImage(np.ndarray):
 
     def fft(self,
             ffts: Fast_FFTs = None):
-        if not hasattr(self, 'ffts'):
+        if getattr(self, 'ffts', None) is None:
             if ffts is not None:
                 self.ffts = ffts
             else:
                 self.ffts = Fast_FFTs(self.shape[0], 1)
-        if not hasattr(self, 'fourier_transform'):
+        if getattr(self, 'fourier_transform', None) is None:
             if self.fourier_space:
                 self.fourier_transform = self.ffts.ift(self)
             else:
@@ -106,9 +106,9 @@ class MicroscopeImage(DataImage):
     """
 
     def __new__(cls, input_array,
+                ffts:                  None | Fast_FFTs = None,
                 microscope_parameters: None | MicroscopeParameters = None,
-                aberration:            None | Aberration = None,
-                ffts:                  None | Fast_FFTs = None):
+                aberration:            None | Aberration = None):
         obj = super().__new__(cls, input_array, ffts)
         if microscope_parameters is None:
             print("Warning: No microscope parameters were provided to the"
