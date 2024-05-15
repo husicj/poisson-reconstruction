@@ -194,9 +194,9 @@ class PoissonReconstruction:
 
     def _update_search_direction(self) -> None:
         self.search_direction_vector = np.random.rand(len(self.search_direction_vector))
+        # TODO combine with _update_object_estimate() so that Q does not get recalculated
         # temp1 = jnp.conj(iterData.h) * ff.ift2(iterData.Q * jnp.conj(iterData.F))
         # temp2 = jnp.imag(iterData.H * ff.ift(temp1)).sum(axis = 0)
-        
         # dc_integral = temp2[zernikes.inds] * zernikes.zern    
         # dc = 2*dc_integral.sum(axis = 1)/(dim[0]*dim[1])
 
@@ -214,6 +214,5 @@ if __name__ == "__main__":
     # TODO change the path variable to be supplied by cl argument
     path = 'data_dir'
     diversity_set = DiversitySet.load_with_data_loader(path)
-    diversity_set.show()
     recon = PoissonReconstruction(diversity_set)
     recon.run(max_iterations=15)
