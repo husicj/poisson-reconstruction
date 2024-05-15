@@ -68,9 +68,6 @@ class Fast_FFTs():
         
         if export_wisdom: self.write_wisdom(dsize, num_imgs, nt)
 
-        print("New FFTs calculated!")
-        show_stack()
-
        
     def fft(self, im):
         nd = len(im.shape)

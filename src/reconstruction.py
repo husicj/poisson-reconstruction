@@ -212,8 +212,8 @@ class PoissonReconstruction:
 
 if __name__ == "__main__":
     # TODO change the path variable to be supplied by cl argument
-    # path = '/home/husicj/adaptive_optics/data/Datasets/AO/230921 AO0057 U2OS_Cell/'
     path = 'data_dir'
     diversity_set = DiversitySet.load_with_data_loader(path)
+    diversity_set.show()
     recon = PoissonReconstruction(diversity_set)
-    recon.run(max_iterations=10)
+    recon.run(max_iterations=15)

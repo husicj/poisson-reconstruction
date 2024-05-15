@@ -1,10 +1,11 @@
 import sys
 
 import imageio
+import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import gridspec
 
 import data_loader
-
 from aberration import Aberration, ZernikeAberration
 from data_loader import MicroscopeParameters
 from fast_fft import Fast_FFTs
@@ -40,12 +41,10 @@ class DiversitySet:
         self.ffts = ffts
         self.images = []
         for i in range(images.shape[0]):
-            print(f"{aberrations[i]=}")
             image = MicroscopeImage(images[i],
                                     ffts,
                                     microscope_parameters,
                                     aberrations[i])
-            print(f"{image.aberration=}\n\n")
             self.images.append(image)
         self.image_count = len(self.images)
         self.center_index = center_index
@@ -83,10 +82,6 @@ class DiversitySet:
             aberration_list.append(image.aberration)
         return aberration_list
 
-    def ffts(self):
-        """Returns the Fourier transforms of each of the diversity images."""
-        pass
-
     def show(self):
         """Display a preview of the image stack."""
         fig = plt.figure(figsize=(32, 6))
@@ -94,11 +89,9 @@ class DiversitySet:
         # Plot each image in stack
         for i in range(self.image_count):
             ax = fig.add_subplot(gs[0, i])
-            ax.imshow(self[:,:,i], cmap='gray')
+            ax.imshow(self.images[i], cmap='gray')
             ax.set_title(f"Image {i}")
             ax.axis('off')
-            if colorbar:
-                ax.colorbar()
         plt.show()
 
     def save(self):
