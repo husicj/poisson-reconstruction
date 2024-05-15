@@ -1,5 +1,6 @@
 import sys
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from aberration import ZernikeAberration
@@ -122,7 +123,7 @@ class PoissonReconstruction:
             becomes true."""
 
             while self.iteration_count < max_iterations:
-                # memory_snapshot(self)
+                memory_snapshot(self)
                 if self.break_condition_met:
                     self.break_condition_met = False
                     break
@@ -215,4 +216,4 @@ if __name__ == "__main__":
     path = 'data_dir'
     diversity_set = DiversitySet.load_with_data_loader(path)
     recon = PoissonReconstruction(diversity_set)
-    recon.run(max_iterations=100)
+    recon.run(max_iterations=10)

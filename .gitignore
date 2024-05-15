@@ -11,5 +11,6 @@ data_dir
 data_cropped
 estimates
 ignore
+profile*
 venv
 wisdom
