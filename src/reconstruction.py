@@ -134,9 +134,9 @@ class PoissonReconstruction:
 
         print(f"Iteration {self.iteration_count}")
         cost = self._line_search()
-        self._update_object_estimate()
-        self._update_search_direction()
+        self._update_object_estimate_and_search_direction()
         self.iteration_info['cost'].append(cost)
+        self.image.show()
         self.iteration_count += 1
 
     def _line_search(self,
@@ -169,9 +169,10 @@ class PoissonReconstruction:
         self.aberration = test_aberration
         return test_cost
 
-    def _update_object_estimate(self) -> None:
+    def _update_object_estimate_and_search_direction(self) -> None:
         """Used the aberration estimate in self.aberration to create an updated
-        estimate of the object captured in self.diversity_set."""
+        estimate of the object captured in self.diversity_set, and then update
+        the search direction that can be used in the following iteration."""
 
         # Q is an intermediate term used in the updating of the object estimate
         # representing d_k(x) / (f(x) * s_k(x)), where d_k are the diversity
@@ -180,25 +181,30 @@ class PoissonReconstruction:
         # k along with the estimated unknown aberration. Thus this ratio
         # represents the discrepancy of the estimate from the captured images.
         update_factor = DataImage.blank(self.size, self.ffts)#.view(dtype='complex128')
+        coefficient_space_gradient = np.zeros(len(self.search_direction_vector))
         normalization_factor = 0
         for k in range(self.diversity_set.image_count):
             aberration = self.aberration * self.diversity_set.aberrations()[k]
             psf = aberration.psf(self.diversity_set.microscope_parameters)
-            q = self.diversity_set.images[k] / (psf * self.image)
+            q = (self.diversity_set.images[k] /
+                 (psf.fourier_transform * self.image.fft(self.ffts))
+                 .fft(self.ffts))
             Q = q.fft(self.ffts) 
             update_factor_term_transform = np.conj(psf) * Q
             # TODO check if this ignoring of imaginary components makes sense
             update_factor += update_factor_term_transform.fft(self.ffts).real
             normalization_factor += psf[self.center_coordinate]
+
+            # temp1 = (np.conj(self.aberration.gpf()) *
+            #          (Q * np.conj(self.image)).fft(self.ffts))
+            # temp2 = jnp.imag(iterData.H * ff.ift(temp1)).sum(axis = 0)
+            # dc_integral = temp2[zernikes.inds] * zernikes.zern    
+            # dc = 2*dc_integral.sum(axis = 1)/(dim[0]*dim[1])
+
         self.image *= update_factor / normalization_factor
 
-    def _update_search_direction(self) -> None:
+        # TODO replace with the calcuated gradient
         self.search_direction_vector = np.random.rand(len(self.search_direction_vector))
-        # TODO combine with _update_object_estimate() so that Q does not get recalculated
-        # temp1 = jnp.conj(iterData.h) * ff.ift2(iterData.Q * jnp.conj(iterData.F))
-        # temp2 = jnp.imag(iterData.H * ff.ift(temp1)).sum(axis = 0)
-        # dc_integral = temp2[zernikes.inds] * zernikes.zern    
-        # dc = 2*dc_integral.sum(axis = 1)/(dim[0]*dim[1])
 
     def __sizeof__(self):
         size = 0
@@ -215,4 +221,5 @@ if __name__ == "__main__":
     path = 'data_dir'
     diversity_set = DiversitySet.load_with_data_loader(path)
     recon = PoissonReconstruction(diversity_set)
-    recon.run(max_iterations=15)
+    recon.run(max_iterations=5)
+    recon.image.show()
