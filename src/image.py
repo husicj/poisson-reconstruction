@@ -71,8 +71,8 @@ class DataImage(np.ndarray):
 
     def show(self, colorbar=False):
         """Plots the image represented by the class."""
-        plt.imshow(self[:,:,i], cmap='gray')
-        ax.axis('off')
+        ax = plt.imshow(self, cmap='gray')
+        # ax.axes('off')
         if colorbar:
             ax.colorbar()
         plt.show()
