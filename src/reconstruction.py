@@ -195,9 +195,11 @@ class PoissonReconstruction:
             update_factor += update_factor_term_transform.fft(self.ffts).real
             normalization_factor += psf[self.center_coordinate]
 
-            # temp1 = (np.conj(self.aberration.gpf()) *
-            #          (Q * np.conj(self.image)).fft(self.ffts))
-            # temp2 = jnp.imag(iterData.H * ff.ift(temp1)).sum(axis = 0)
+            # temp1 = (np.conj(self.aberration.gpf().fft(self.ffts)) *
+            #          (Q * np.flip(self.image.fft(self.ffts)))
+            #          .fft(self.ffts))
+            # temp2 = np.imag(self.aberration.gpf(self.image.microscope_parameters)
+            #                 * temp1.fft(self.ffts)
             # dc_integral = temp2[zernikes.inds] * zernikes.zern    
             # dc = 2*dc_integral.sum(axis = 1)/(dim[0]*dim[1])
 
