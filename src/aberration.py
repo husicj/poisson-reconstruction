@@ -45,7 +45,7 @@ class Aberration:
             F = image
         else:
             F = image.fft(self.ffts)
-        G = F * self.psf(image.microscope_parameters)
+        G = F * self.psf(image.microscope_parameters).fourier_transform
         if return_real_space_image:
             aberrated_image = G.fft(self.ffts)
             aberrated_image.fourier_space = False
@@ -234,12 +234,24 @@ class ZernikeAberration(Aberration):
                 acc += (-1)**k * scipy.special.comb(n-k, k) * scipy.special.comb(n-2*k, mn-k) * r**(n - 2*k)
         return acc * disc
 
-    def zernike(self, n, m, x, y):
-        r = np.sqrt(x**2 + y**2)
-        theta = np.arctan2(y, x)
+    def zernike(self, n, m, u, v):
+        r = np.sqrt(u**2 + v**2)
+        theta = np.arctan2(v, u)
         return self.zern_polar(n, m, r, theta)
 
-    def zernnoll2nm(self, j0, numskip):  #technically noll -1, so starting at j = 0
+    def zernike_pixels(self, n, m, x, y):
+        u = self._pixel_to_pupil_coordinate(x)
+        v = self._pixel_to_pupil_coordinate(y)
+        return self.zernike(n, m, u, v)
+
+    def zernike_pixel_array(self, j0):
+        n, m = self.zernnoll2nm(j0)
+        grid = np.mgrid[0:self.size, 0:self.size] # an array of coordinates 
+        uv_grid = self._pixel_to_pupil_coordinate(grid, self.microscope)
+        array = self.zernike(n, m, uv_grid[0], uv_grid[1])
+        return array
+
+    def zernnoll2nm(self, j0, numskip=0):  #technically noll -1, so starting at j = 0
         j = j0 + numskip + 1
         indices = np.array(np.ceil((1+np.sqrt(1+8*j))/2),dtype=int)-1
         triangular_numbers = np.array(indices*(indices+1)/2).astype(int)

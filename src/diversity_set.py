@@ -29,11 +29,12 @@ class DiversitySet:
     constructor respectively."""
 
     def __init__(self,
-                 images:                np.ndarray,
-                 aberrations:           List[Aberration],
-                 microscope_parameters: None | MicroscopeParameters = None,
-                 center_index:          int = 0,
-                 ffts:                  None | Fast_FFTs = None):
+                 images:                  np.ndarray,
+                 aberrations:             List[Aberration],
+                 microscope_parameters:   None | MicroscopeParameters = None,
+                 center_index:            int = 0,
+                 ffts:                    None | Fast_FFTs = None,
+                 ground_truth_aberration: None | np.ndarray = None):
         if len(aberrations) != images.shape[0]:
             print(f"Warning: number of aberrations provided ({len(aberrations)})"
                   f" not equal to number of images ({images.shape[0]}).")
@@ -48,6 +49,7 @@ class DiversitySet:
             self.images.append(image)
         self.image_count = len(self.images)
         self.center_index = center_index
+        self.ground_truth_aberration = ground_truth_aberration
 
     @classmethod
     def load(cls,
@@ -70,10 +72,11 @@ class DiversitySet:
         """Loads data from a specific existing file structure scheme."""
         data = data_loader.ExperimentalDataset(data_dir, iteration_number)
         images = np.insert(data.phase_diversity_images, 0, data.aberrated_image, axis=0)
+        ground_truth_aberration = np.pad(getattr(data, 'gt_phase_aberration_coeffs', None), (3,0))
         size = images[0].shape[0]
         aberration_list = np.pad(data.phase_diversities_coeffs, ((1,0), (3,0)))
         aberrations = ZernikeAberration.aberration_list(aberration_list, size, ffts)
-        return cls(images, aberrations, data.microscope_parameters, 0)
+        return cls(images, aberrations, data.microscope_parameters, 0, ffts, ground_truth_aberration)
 
     def aberrations(self):
         """Returns the applied aberrations of the diverisity images as a list."""

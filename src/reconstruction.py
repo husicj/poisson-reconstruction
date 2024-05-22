@@ -113,9 +113,10 @@ class PoissonReconstruction:
         self.iteration_count = 0
         self.iteration_info = {'cost': [-np.inf]}
         self.step_size = 3e4
-        # negative value so that random direction can be used
-        self.step_size_reduction_factor = -0.7
-        self.search_direction_vector = np.ones((estimated_coefficients_count))
+        self.step_size_reduction_factor =0.3
+        # we start with a small search vector so that we can calculate an
+        # initial cost to compare against in the first iteration
+        self.search_direction_vector = 0.01 * np.ones((estimated_coefficients_count)) / self.step_size
 
     def run(self, max_iterations: int = 1000) -> None:
             """Iteratively runs the phase reconstruction algorithm until either
@@ -123,7 +124,6 @@ class PoissonReconstruction:
             becomes true."""
 
             while self.iteration_count < max_iterations:
-                memory_snapshot(self)
                 if self.break_condition_met:
                     self.break_condition_met = False
                     break
@@ -134,9 +134,9 @@ class PoissonReconstruction:
 
         print(f"Iteration {self.iteration_count}")
         cost = self._line_search()
+        print(f"{self.diversity_set.ground_truth_aberration - self.aberration.coefficients=}")
         self._update_object_estimate_and_search_direction()
         self.iteration_info['cost'].append(cost)
-        self.image.show()
         self.iteration_count += 1
 
     def _line_search(self,
@@ -160,7 +160,7 @@ class PoissonReconstruction:
                 test_estimate = test_aberration.apply(self.image, True)
                 test_cost += (self.diversity_set.images[i] *
                               np.log(test_estimate) - test_estimate).mean()[()]
-            print(f"after: {test_cost.real=}, {self.step_size=}")
+            print(f"after line search iteration: {test_cost.real=}, {self.step_size=}")
             if test_cost.real > self.iteration_info['cost'][-1]:
                 # Improvement over the previous iteration
                 break
@@ -184,29 +184,32 @@ class PoissonReconstruction:
         coefficient_space_gradient = np.zeros(len(self.search_direction_vector))
         normalization_factor = 0
         for k in range(self.diversity_set.image_count):
-            aberration = self.aberration * self.diversity_set.aberrations()[k]
-            psf = aberration.psf(self.diversity_set.microscope_parameters)
+            aberration_k = self.aberration * self.diversity_set.aberrations()[k]
+            psf = aberration_k.psf(self.diversity_set.microscope_parameters)
             q = (self.diversity_set.images[k] /
                  (psf.fourier_transform * self.image.fft(self.ffts))
                  .fft(self.ffts))
             Q = q.fft(self.ffts) 
-            update_factor_term_transform = np.conj(psf) * Q
+            update_factor_term_transform = np.conj(psf).fft(self.ffts) * Q
             # TODO check if this ignoring of imaginary components makes sense
             update_factor += update_factor_term_transform.fft(self.ffts).real
             normalization_factor += psf[self.center_coordinate]
 
-            # temp1 = (np.conj(self.aberration.gpf().fft(self.ffts)) *
-            #          (Q * np.flip(self.image.fft(self.ffts)))
-            #          .fft(self.ffts))
-            # temp2 = np.imag(self.aberration.gpf(self.image.microscope_parameters)
-            #                 * temp1.fft(self.ffts)
-            # dc_integral = temp2[zernikes.inds] * zernikes.zern    
-            # dc = 2*dc_integral.sum(axis = 1)/(dim[0]*dim[1])
+            # the loss function gradient with respect to Zernike coefficients
+            # is broken up here to help with readability
+            temp1 = (np.conj(aberration_k.gpf(self.image.microscope_parameters)
+                             .fft(self.ffts)) *
+                     (Q * np.flip(self.image).fft(self.ffts))
+                     .fft(self.ffts, force_inverse=True))
+            temp2 = np.imag(aberration_k.gpf(self.image.microscope_parameters)
+                            * temp1)
+            for noll_index in range(len(coefficient_space_gradient)):
+                zern = aberration_k.zernike_pixel_array(noll_index)
+                coefficient_space_gradient[noll_index] = -2 * np.sum(zern * temp2)
 
         self.image *= update_factor / normalization_factor
-
-        # TODO replace with the calcuated gradient
-        self.search_direction_vector = np.random.rand(len(self.search_direction_vector))
+        self.search_direction_vector = -1 * coefficient_space_gradient
+        print(f"{self.search_direction_vector=}")
 
     def __sizeof__(self):
         size = 0
@@ -223,5 +226,6 @@ if __name__ == "__main__":
     path = 'data_dir'
     diversity_set = DiversitySet.load_with_data_loader(path)
     recon = PoissonReconstruction(diversity_set)
+    diversity_set.show()
     recon.run(max_iterations=5)
     recon.image.show()

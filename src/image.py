@@ -53,18 +53,34 @@ class DataImage(np.ndarray):
         return cls(image, ffts, *args)
 
     def fft(self,
-            ffts: Fast_FFTs = None):
+            ffts: Fast_FFTs = None,
+            force_forward: Bool = False,
+            force_inverse: Bool = False):
+        """Calculates the fourier transform of the image, caching the result.
+        By default, the forward or inverse transform is chosen based on the
+        value of self.fourier_space. For instances when the transform is not
+        between two literal images, this can be overridden by the forcing
+        arguments."""
         if getattr(self, 'ffts', None) is None:
             if ffts is not None:
                 self.ffts = ffts
             else:
                 self.ffts = Fast_FFTs(self.shape[0], 1)
+        if force_forward:
+            out = self.ffts.fft(self).view(DataImage)
+            out.fourier_space = None
+            return out
+        if force_inverse:
+            out = self.ffts.ift(self).view(DataImage)
+            out.fourier_space = None
+            return out
         if getattr(self, 'fourier_transform', None) is None:
             if self.fourier_space:
-                self.fourier_transform = self.ffts.ift(self)
+                self.fourier_transform = self.ffts.ift(self).view(DataImage)
             else:
-                self.fourier_transform = self.ffts.fft(self)
-        return self.fourier_transform.view(DataImage)
+                self.fourier_transform = self.ffts.fft(self).view(DataImage)
+        self.fourier_transform.fourier_space = not self.fourier_space
+        return self.fourier_transform
 
     def save(self, path):
         pass
@@ -81,6 +97,18 @@ class DataImage(np.ndarray):
         super().__array_finalize__(obj)
         self.ffts = getattr(obj, 'ffts', None)
         self.fourier_space = getattr(obj, 'fourier_space', False)
+
+    def __mul__(self, other):
+        if self.fourier_space != other.fourier_space:
+            if self.fourier_space is not None and other.fourier_space is not None:
+                print("Warning: coordinate space mismatch for multiplication.")
+                show_stack()
+        out = super().__mul__(other)
+        if other.fourier_space is None:
+            out.fourier_space = None
+        else:
+            out.fourier_space = self.fourier_space
+        return out
 
     def __sizeof__(self):
         size = self.nbytes
