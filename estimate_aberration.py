@@ -76,7 +76,7 @@ def apply_algorithm(data, logFile=None, verbose=False):
 
     theta = image_functions.get_theta(aberration_coefficients, zern.zern)
 
-    imgs = sim_im_2(ob, dim, phi, num_imgs, theta, zern, R, inds, pad=False)
+    # imgs = sim_im_2(ob, dim, phi, num_imgs, theta, zern, R, inds, pad=False)
     c0 = np.zeros((NUM_C))+1e-10
 
     c2, cost2, num_iter2, sss = iterate_poisson.iter_p(zern, imgs0, theta, Sk0, c0.copy(), ff, show=verbose)
@@ -111,17 +111,17 @@ def square_ob(dsize, squaresize):
 ##### SETUP
 #####
 
-# data_dir = '/home/joren/documents/adaptive_optics/data/Datasets/AO/230921 AO0057 U2OS_Cell/'
+data_dir = 'data_dir/'
 # iteration_number = 1
-# data = data_loader.ExperimentalDataset(data_dir, iteration_number)
+data = data_loader.ExperimentalDataset(data_dir, iteration_number=1)
 
-dsize = 256
-ob = square_ob(dsize, dsize//2)
+# dsize = 256
+# ob = square_ob(dsize, dsize//2)
 # TODO structure the appropriate arguments for the following function
-data = data_loader.MockData(imgs, aberration_coeffs, diversity_coeffs)
+# data = data_loader.MockData(imgs, aberration_coeffs, diversity_coeffs)
 
-plt.imshow(ob)
-plt.show()
+# plt.imshow(ob)
+# plt.show()
 
 if CSV_LOG:
     csvFilePath = "estimated_coefficients.csv"

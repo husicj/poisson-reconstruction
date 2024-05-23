@@ -136,6 +136,7 @@ class PoissonReconstruction:
         cost = self._line_search()
         print(f"{self.diversity_set.ground_truth_aberration - self.aberration.coefficients=}")
         self._update_object_estimate_and_search_direction()
+        # self.image.show()
         self.iteration_info['cost'].append(cost)
         self.iteration_count += 1
 
@@ -157,6 +158,7 @@ class PoissonReconstruction:
                 test_aberration = ZernikeAberration(test_coefficients,
                                                     self.size,
                                                     self.ffts)
+                # TODO the following line seems to be the main slowdown
                 test_estimate = test_aberration.apply(self.image, True)
                 test_cost += (self.diversity_set.images[i] *
                               np.log(test_estimate) - test_estimate).mean()[()]
@@ -208,8 +210,8 @@ class PoissonReconstruction:
                 coefficient_space_gradient[noll_index] = -2 * np.sum(zern * temp2)
 
         self.image *= update_factor / normalization_factor
-        self.search_direction_vector = -1 * coefficient_space_gradient
-        print(f"{self.search_direction_vector=}")
+        self.search_direction_vector = -1 * coefficient_space_gradient / np.linalg.norm(coefficient_space_gradient)
+        # TODO this value is much too large - try normalizing, or using step size order 1
 
     def __sizeof__(self):
         size = 0
@@ -227,5 +229,5 @@ if __name__ == "__main__":
     diversity_set = DiversitySet.load_with_data_loader(path)
     recon = PoissonReconstruction(diversity_set)
     diversity_set.show()
-    recon.run(max_iterations=5)
+    recon.run(max_iterations=15)
     recon.image.show()

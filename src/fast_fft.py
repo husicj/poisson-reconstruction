@@ -13,7 +13,7 @@ import sys
 import pyfftw
 import pathlib
 
-from bin.mem_profile import show_stack
+# from bin.mem_profile import show_stack
 
 class Fast_FFTs():
     def __init__(self, dsize, num_imgs, num_threads = 1):
