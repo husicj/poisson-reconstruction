@@ -112,8 +112,9 @@ class PoissonReconstruction:
                                            self.aberration)
         self.iteration_count = 0
         self.iteration_info = {'cost': [-np.inf]}
-        self.step_size = 3e4
-        self.step_size_reduction_factor =0.3
+        # self.step_size = 3e4
+        self.step_size = 1
+        self.step_size_reduction_factor =0.9
         # we start with a small search vector so that we can calculate an
         # initial cost to compare against in the first iteration
         self.search_direction_vector = 0.01 * np.ones((estimated_coefficients_count)) / self.step_size
@@ -133,6 +134,7 @@ class PoissonReconstruction:
         """Runs a single iteration of the phase reconstruction algorithm."""
 
         print(f"Iteration {self.iteration_count}")
+        print(f"{self.search_direction_vector=}")
         cost = self._line_search()
         print(f"{self.diversity_set.ground_truth_aberration - self.aberration.coefficients=}")
         self._update_object_estimate_and_search_direction()
@@ -154,7 +156,9 @@ class PoissonReconstruction:
             for i, aberration in enumerate(aberration_set):
                 step = self.step_size * self.search_direction_vector
                 # TODO confirm that the following - sign is correct
-                test_coefficients = aberration.coefficients - step
+                # test_coefficients = aberration.coefficients - step
+                # TODO remove the following line
+                test_coefficients = self.diversity_set.ground_truth_aberration
                 test_aberration = ZernikeAberration(test_coefficients,
                                                     self.size,
                                                     self.ffts)
@@ -163,6 +167,7 @@ class PoissonReconstruction:
                 test_cost += (self.diversity_set.images[i] *
                               np.log(test_estimate) - test_estimate).mean()[()]
             print(f"after line search iteration: {test_cost.real=}, {self.step_size=}")
+            print(f"{test_aberration.coefficients=}")
             if test_cost.real > self.iteration_info['cost'][-1]:
                 # Improvement over the previous iteration
                 break
@@ -207,11 +212,11 @@ class PoissonReconstruction:
                             * temp1)
             for noll_index in range(len(coefficient_space_gradient)):
                 zern = aberration_k.zernike_pixel_array(noll_index)
-                coefficient_space_gradient[noll_index] = -2 * np.sum(zern * temp2)
+                coefficient_space_gradient[noll_index] += -2 * np.sum(zern * temp2)
 
         self.image *= update_factor / normalization_factor
-        self.search_direction_vector = -1 * coefficient_space_gradient / np.linalg.norm(coefficient_space_gradient)
-        # TODO this value is much too large - try normalizing, or using step size order 1
+        # self.search_direction_vector = -1 * coefficient_space_gradient / np.linalg.norm(coefficient_space_gradient)
+        self.search_direction_vector = -1 * coefficient_space_gradient
 
     def __sizeof__(self):
         size = 0
