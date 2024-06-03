@@ -192,12 +192,12 @@ class PoissonReconstruction:
         normalization_factor = 0
         for k in range(self.diversity_set.image_count):
             aberration_k = self.aberration * self.diversity_set.aberrations()[k]
-            psf = aberration_k.psf(self.diversity_set.microscope_parameters)
+            psf = aberration_k.psf(self.diversity_set.microscope_parameters) # s_k
             q = (self.diversity_set.images[k] /
-                 (psf.fourier_transform * self.image.fft(self.ffts))
+                 (psf.fourier_transform * self.image.fft(self.ffts)) # TODO check that multiplication is working as expected
                  .fft(self.ffts))
             Q = q.fft(self.ffts) 
-            update_factor_term_transform = np.conj(psf).fft(self.ffts) * Q
+            update_factor_term_transform = np.conj(psf).fft(self.ffts) * Q # TODO should be gpf instead of psf maybe
             # TODO check if this ignoring of imaginary components makes sense
             update_factor += update_factor_term_transform.fft(self.ffts).real
             normalization_factor += psf[self.center_coordinate]
@@ -212,7 +212,7 @@ class PoissonReconstruction:
                             * temp1)
             for noll_index in range(len(coefficient_space_gradient)):
                 zern = aberration_k.zernike_pixel_array(noll_index)
-                coefficient_space_gradient[noll_index] += -2 * np.sum(zern * temp2)
+                coefficient_space_gradient[noll_index] += -2 * np.sum(zern * temp2) / (self.size * self.size)
 
         self.image *= update_factor / normalization_factor
         # self.search_direction_vector = -1 * coefficient_space_gradient / np.linalg.norm(coefficient_space_gradient)
@@ -232,6 +232,7 @@ if __name__ == "__main__":
     # TODO change the path variable to be supplied by cl argument
     path = 'data_dir'
     diversity_set = DiversitySet.load_with_data_loader(path)
+    print(f"{np.mean(diversity_set.images[diversity_set.center_index])=}")
     recon = PoissonReconstruction(diversity_set)
     diversity_set.show()
     recon.run(max_iterations=15)

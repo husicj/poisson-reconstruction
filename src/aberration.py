@@ -77,7 +77,7 @@ class Aberration:
         """Converts a pixel index value to a pupil plane coordinate,
         based on the relevant microscope parameters."""
 
-        scale_factor = microscope.frequency_scale_factor.value
+        scale_factor = microscope.frequency_scale_factor.value / self.size
         return scale_factor * pixel_indices
 
     def psf(self,

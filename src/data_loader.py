@@ -10,8 +10,8 @@ class MicroscopeParameters:
         self.numerical_aperture = numerical_aperture
         self.wavelength = wavelength
         self.pixel_size = pixel_size
-        self.frequency_scale_factor = pixel_size * wavelength / numerical_aperture
-        # self.ID = hash((numerical_aperture, wavelength, pixel_size))
+        # self.frequency_scale_factor = pixel_size * wavelength / numerical_aperture
+        self.frequency_scale_factor = wavelength / (pixel_size * numerical_aperture)
 
     def __eq__(self, other):
         if other is None:
