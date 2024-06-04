@@ -64,8 +64,10 @@ class Aberration:
             return self.gpf_
         grid = np.mgrid[0:self.size, 0:self.size] # an array of coordinates 
         uv_grid = self._pixel_to_pupil_coordinate(grid, microscope)
-        array = self.aberration_function(uv_grid[0], uv_grid[1])
-        gpf = MicroscopeImage(array, self.ffts, microscope, None)
+        array = np.exp(1j * self.aberration_function(uv_grid[0], uv_grid[1]))
+        r_grid = np.sqrt((uv_grid ** 2).sum(axis=0))
+        pupil = (r_grid <= microscope.numerical_aperture / microscope.wavelength.value)
+        gpf = MicroscopeImage(pupil * array, self.ffts, microscope, None)
         gpf.fourier_space = True
         self.gpf_ = gpf
         return gpf
@@ -77,8 +79,8 @@ class Aberration:
         """Converts a pixel index value to a pupil plane coordinate,
         based on the relevant microscope parameters."""
 
-        scale_factor = microscope.frequency_scale_factor.value / self.size
-        return scale_factor * pixel_indices
+        scale_factor = 0.5 / (microscope.pixel_size.value * (self.size // 2))
+        return scale_factor * (pixel_indices - self.size // 2)
 
     def psf(self,
             microscope: MicroscopeParameters

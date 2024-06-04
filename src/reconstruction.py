@@ -134,7 +134,7 @@ class PoissonReconstruction:
         """Runs a single iteration of the phase reconstruction algorithm."""
 
         print(f"Iteration {self.iteration_count}")
-        print(f"{self.search_direction_vector=}")
+        # print(f"{self.search_direction_vector=}")
         cost = self._line_search()
         print(f"{self.diversity_set.ground_truth_aberration - self.aberration.coefficients=}")
         self._update_object_estimate_and_search_direction()
@@ -235,5 +235,5 @@ if __name__ == "__main__":
     print(f"{np.mean(diversity_set.images[diversity_set.center_index])=}")
     recon = PoissonReconstruction(diversity_set)
     diversity_set.show()
-    recon.run(max_iterations=15)
+    recon.run(max_iterations=5)
     recon.image.show()

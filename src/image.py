@@ -85,11 +85,16 @@ class DataImage(np.ndarray):
     def save(self, path):
         pass
 
-    def show(self, colorbar=False):
+    def show(self):
         """Plots the image represented by the class."""
-        ax = plt.imshow(self, cmap='gray')
-        if colorbar:
-            ax.colorbar()
+        if np.iscomplexobj:
+            fig, (ax0, ax1) = plt.subplots(1,2)
+            ax0.imshow(self.real, cmap = 'gray')
+            ax1.imshow(self.imag, cmap = 'gray')
+            ax0.set_title('real component')
+            ax1.set_title('imaginary component')
+        else:
+            ax = plt.imshow(self, cmap='gray')
         plt.show()
 
     def __array_finalize__(self, obj):
