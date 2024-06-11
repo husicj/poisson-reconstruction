@@ -134,7 +134,7 @@ class PoissonReconstruction:
         """Runs a single iteration of the phase reconstruction algorithm."""
 
         print(f"Iteration {self.iteration_count}")
-        # print(f"{self.search_direction_vector=}")
+        print(f"{self.search_direction_vector=}")
         cost = self._line_search()
         print(f"{self.diversity_set.ground_truth_aberration - self.aberration.coefficients=}")
         self._update_object_estimate_and_search_direction()

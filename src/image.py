@@ -87,14 +87,20 @@ class DataImage(np.ndarray):
 
     def show(self):
         """Plots the image represented by the class."""
-        if np.iscomplexobj:
+        # if self.fourier_space:
+        if self.fourier_space:
+            obj = np.fft.fftshift(self)
+            print("Fourier space images are shown with the 0 frequency component at the center.")
+        else:
+            obj = self
+        if np.iscomplexobj(self):
             fig, (ax0, ax1) = plt.subplots(1,2)
-            ax0.imshow(self.real, cmap = 'gray')
-            ax1.imshow(self.imag, cmap = 'gray')
+            ax0.imshow(obj.real, cmap = 'gray')
+            ax1.imshow(obj.imag, cmap = 'gray')
             ax0.set_title('real component')
             ax1.set_title('imaginary component')
         else:
-            ax = plt.imshow(self, cmap='gray')
+            ax = plt.imshow(obj, cmap='gray')
         plt.show()
 
     def __array_finalize__(self, obj):
@@ -104,12 +110,13 @@ class DataImage(np.ndarray):
         self.fourier_space = getattr(obj, 'fourier_space', False)
 
     def __mul__(self, other):
-        if self.fourier_space != other.fourier_space:
-            if self.fourier_space is not None and other.fourier_space is not None:
-                print("Warning: coordinate space mismatch for multiplication.")
-                show_stack()
+        if isinstance(other, DataImage):
+            if self.fourier_space != other.fourier_space:
+                if self.fourier_space is not None and other.fourier_space is not None:
+                    print("Warning: coordinate space mismatch for multiplication.")
+                    show_stack()
         out = super().__mul__(other)
-        if other.fourier_space is None:
+        if getattr(other, 'fourier_space', None) is None:
             out.fourier_space = None
         else:
             out.fourier_space = self.fourier_space
