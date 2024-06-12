@@ -55,7 +55,6 @@ class Aberration:
 
     def gpf(self,
             microscope: MicroscopeParameters,
-            shift: bool = False
             ) -> MicroscopeImage:
         """Returns the generalized pupil function associated with the
         aberration. The microscope parameters are used to set the pixel
@@ -68,10 +67,7 @@ class Aberration:
         array = np.exp(1j * self.aberration_function(uv_grid[0], uv_grid[1]))
         r_grid = np.sqrt((uv_grid ** 2).sum(axis=0))
         pupil = (r_grid <= microscope.numerical_aperture / microscope.wavelength.value)
-        if shift:
-            gpf = MicroscopeImage(np.fft.ifftshift(pupil * array), self.ffts, microscope, None)
-        else:
-            gpf = MicroscopeImage((pupil * array), self.ffts, microscope, None)
+        gpf = MicroscopeImage(np.fft.ifftshift(pupil * array), self.ffts, microscope, None)
         gpf.fourier_space = True
         self.gpf_ = gpf
         return gpf
@@ -98,10 +94,6 @@ class Aberration:
             return self.psf_
         h = self.gpf(microscope).fft()
         s = (np.abs(h)**2).real
-        s.show()
-        h = self.gpf(microscope, shift=True).fft()
-        s = (np.abs(h)**2).real
-        s.show()
         s.fourier_space = False
         S = s.fft(self.ffts)
         S.fourier_space = True
@@ -113,17 +105,22 @@ class Aberration:
     def __mul__(self, other):
         if other is None:
             return self
-        def combined_aberration_function(x, y):
-            return (self.aberration_function(x,y) +
-                    other.aberration_function(x,y))
-        return Aberration(combined_aberration_function,
+        if not isinstance(other, Aberration):
+            def combined_aberration_function(x, y):
+                return other * self.aberration_function(x,y)
+        else:
+            def combined_aberration_function(x, y):
+                return (self.aberration_function(x,y) +
+                        other.aberration_function(x,y))
+        out = Aberration(combined_aberration_function,
                           self.size,
                           self.ffts)
+        return out
 
     def __rmul__(self, other):
         if other is None:
             return self
-        self.__mul__(other)
+        return self.__mul__(other)
 
     def __sizeof__(self):
         size = 0
