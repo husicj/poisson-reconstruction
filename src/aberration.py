@@ -47,7 +47,7 @@ class Aberration:
             F = image.fft(self.ffts)
         G = F * self.psf(image.microscope_parameters).fourier_transform
         if return_real_space_image:
-            aberrated_image = G.fft(self.ffts)
+            aberrated_image = G.fft(self.ffts).real
             aberrated_image.fourier_space = False
             aberrated_image.fourier_transform = G
             return aberrated_image

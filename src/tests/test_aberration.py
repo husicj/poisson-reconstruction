@@ -3,11 +3,13 @@ import unittest
 
 import astropy.units as unit
 import numpy as np
+import scipy.signal as sig
 
 sys.path.append('..')
 
 from aberration import Aberration, ZernikeAberration
 from data_loader import MicroscopeParameters
+from image import MicroscopeImage
 
 
 class TestAberrationMethods(unittest.TestCase):
@@ -107,13 +109,27 @@ class TestAberrationMethods(unittest.TestCase):
 
     def test_apply(self):
         np.random.seed(1)
-        test_image = np.random.rand((4,4))
-        print(test_image)
+        TEST_IMAGE0 = MicroscopeImage(np.random.rand(4,4),
+                                     microscope_parameters=self.test_microscope2)
+        OUTPUT0 = self.test_aberration0.apply(TEST_IMAGE0, True)
+        PSF = self.test_aberration0.psf(self.test_microscope2)
+        self.assertTrue(np.all(np.isclose(OUTPUT0, TEST_IMAGE0)))
+
+        TEST_IMAGE1 = MicroscopeImage(np.random.rand(4,4),
+                                     microscope_parameters=self.test_microscope0)
+        PSF = self.test_aberration0.psf(self.test_microscope0)
+        EXPECTED_RESULT1 = sig.convolve2d(TEST_IMAGE1, PSF, boundary='wrap')[0:4, 0:4]
+        OUTPUT1 = self.test_aberration0.apply(TEST_IMAGE1, True)
+        self.assertTrue(np.all(np.isclose(EXPECTED_RESULT1, OUTPUT1)))
 
 
 class TestZernikeAberrationMethods(unittest.TestCase):
 
-    pass
+    def test_coefficients_to_function(self):
+        pass
+
+    def test___mul__(self):
+        pass
 
 if __name__ == '__main__':
     unittest.main()
