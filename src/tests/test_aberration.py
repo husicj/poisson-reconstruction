@@ -14,6 +14,7 @@ from image import MicroscopeImage
 
 class TestAberrationMethods(unittest.TestCase):
     def setUp(self):
+        np.random.seed(1)
         self.test_microscope0 = MicroscopeParameters(wavelength=0.24 * unit.um)
         self.test_microscope1 = MicroscopeParameters(wavelength=0.4 * unit.um)
         self.test_microscope2 = MicroscopeParameters(wavelength=0.1 * unit.um)
@@ -108,7 +109,6 @@ class TestAberrationMethods(unittest.TestCase):
         self.assertTrue(np.array_equal(OUTPUT1, EXPECTED_RESULT1))
 
     def test_apply(self):
-        np.random.seed(1)
         TEST_IMAGE0 = MicroscopeImage(np.random.rand(4,4),
                                      microscope_parameters=self.test_microscope2)
         OUTPUT0 = self.test_aberration0.apply(TEST_IMAGE0, True)
@@ -124,12 +124,41 @@ class TestAberrationMethods(unittest.TestCase):
 
 
 class TestZernikeAberrationMethods(unittest.TestCase):
+    def setUp(self):
+        np.random.seed(2)
+        self.test_aberration0 = ZernikeAberration([1,0,0], 4)
+        self.test_aberration1 = ZernikeAberration([0.1,0,1], 4)
 
     def test_coefficients_to_function(self):
-        pass
+        EXPECTED_FUNCTION0 = lambda x,y: float(x * x + y * y <= 1)
+        OUTPUT_FUNCTION0 = self.test_aberration0.coefficients_to_function([1,0,0])
+        for _ in range(100):
+            x = np.random.random()
+            y = np.random.random()
+            EXPECTED_RESULT0 = EXPECTED_FUNCTION0(x, y)
+            OUTPUT0 = OUTPUT_FUNCTION0(x, y)
+            self.assertEqual(EXPECTED_RESULT0, OUTPUT0)
+
+        def EXPECTED_FUNCTION1(x,y): 
+            r_squared = x * x + y * y
+            return int(r_squared <= 1) * (2 * r_squared)
+        OUTPUT_FUNCTION1 = self.test_aberration0.coefficients_to_function([1,0,0,1,0,0])
+        for _ in range(100):
+            x = np.random.random()
+            y = np.random.random()
+            EXPECTED_RESULT1 = EXPECTED_FUNCTION1(x, y)
+            OUTPUT1 = OUTPUT_FUNCTION1(x, y)
+            self.assertTrue(np.isclose(EXPECTED_RESULT1, OUTPUT1))
 
     def test___mul__(self):
-        pass
+        EXPECTED_ABERRATION0 = ZernikeAberration([1.1, 0, 1], 4)
+        OUTPUT_ABERRATION0 = self.test_aberration0 * self.test_aberration1
+        for _ in range(100):
+            x = np.random.random()
+            y = np.random.random()
+            EXPECTED_RESULT0 = EXPECTED_ABERRATION0.aberration_function(x, y)
+            OUTPUT0 = OUTPUT_ABERRATION0.aberration_function(x, y)
+            self.assertTrue(np.isclose(EXPECTED_RESULT0, OUTPUT0))
 
 if __name__ == '__main__':
     unittest.main()

@@ -151,9 +151,9 @@ class ZernikeAberration(Aberration):
                  indexing: str = "Noll"
                  ) -> None:
         if indexing == "Noll":
-            self.coefficients = coefficients
+            self.coefficients = np.array(coefficients)
         else:
-            self.coefficients = coefficients_to_noll(coefficients, indexing)
+            self.coefficients = self.coefficients_to_noll(coefficients, indexing)
         aberration_function = self.coefficients_to_function(self.coefficients)
         super().__init__(aberration_function, size, ffts)
 
