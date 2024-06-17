@@ -204,6 +204,7 @@ class PoissonReconstruction:
 
             # the loss function gradient with respect to Zernike coefficients
             # is broken up here to help with readability
+            # TODO the loss function seems to be giving incorrect values
             temp1 = (np.conj(aberration_k.gpf(self.image.microscope_parameters)
                              .fft(self.ffts)) *
                      (Q * np.flip(self.image).fft(self.ffts))
