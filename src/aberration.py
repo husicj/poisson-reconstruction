@@ -255,7 +255,7 @@ class ZernikeAberration(Aberration):
         n, m = self.zernnoll2nm(j0)
         grid = np.mgrid[0:self.size, 0:self.size] # an array of coordinates 
         uv_grid = self._pixel_to_pupil_coordinate(grid, self.microscope)
-        array = self.zernike(n, m, uv_grid[0], uv_grid[1])
+        array = np.fft.ifftshift(self.zernike(n, m, uv_grid[0], uv_grid[1]))
         return array
 
     def zernnoll2nm(self, j0, numskip=0):  #technically noll -1, so starting at j = 0

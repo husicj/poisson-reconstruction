@@ -138,7 +138,6 @@ class PoissonReconstruction:
         cost = self._line_search()
         print(f"{self.diversity_set.ground_truth_aberration - self.aberration.coefficients=}")
         self._update_object_estimate_and_search_direction()
-        # self.image.show()
         self.iteration_info['cost'].append(cost)
         self.iteration_count += 1
 
@@ -156,9 +155,9 @@ class PoissonReconstruction:
             for i, aberration in enumerate(aberration_set):
                 step = self.step_size * self.search_direction_vector
                 # TODO confirm that the following - sign is correct
-                # test_coefficients = aberration.coefficients - step
+                test_coefficients = aberration.coefficients - step
                 # TODO remove the following line
-                test_coefficients = self.diversity_set.ground_truth_aberration
+                # test_coefficients = self.diversity_set.ground_truth_aberration
                 test_aberration = ZernikeAberration(test_coefficients,
                                                     self.size,
                                                     self.ffts)
@@ -167,7 +166,7 @@ class PoissonReconstruction:
                 test_cost += (self.diversity_set.images[i] *
                               np.log(test_estimate) - test_estimate).mean()[()]
             print(f"after line search iteration: {test_cost.real=}, {self.step_size=}")
-            print(f"{test_aberration.coefficients=}")
+            # print(f"{test_aberration.coefficients=}")
             if test_cost.real > self.iteration_info['cost'][-1]:
                 # Improvement over the previous iteration
                 break
@@ -217,6 +216,7 @@ class PoissonReconstruction:
 
         self.image *= update_factor / normalization_factor
         # self.search_direction_vector = -1 * coefficient_space_gradient / np.linalg.norm(coefficient_space_gradient)
+        print(coefficient_space_gradient)
         self.search_direction_vector = -1 * coefficient_space_gradient
 
     def __sizeof__(self):
@@ -233,8 +233,6 @@ if __name__ == "__main__":
     # TODO change the path variable to be supplied by cl argument
     path = 'data_dir'
     diversity_set = DiversitySet.load_with_data_loader(path)
-    print(f"{np.mean(diversity_set.images[diversity_set.center_index])=}")
     recon = PoissonReconstruction(diversity_set)
-    diversity_set.show()
     recon.run(max_iterations=5)
     recon.image.show()
