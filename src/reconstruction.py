@@ -134,9 +134,9 @@ class PoissonReconstruction:
         """Runs a single iteration of the phase reconstruction algorithm."""
 
         print(f"Iteration {self.iteration_count}")
-        print(f"{self.search_direction_vector=}")
+        # print(f"{self.search_direction_vector=}")
         cost = self._line_search()
-        print(f"{self.diversity_set.ground_truth_aberration - self.aberration.coefficients=}")
+        # print(f"{self.diversity_set.ground_truth_aberration - self.aberration.coefficients=}")
         self._update_object_estimate_and_search_direction()
         self.iteration_info['cost'].append(cost)
         self.iteration_count += 1
@@ -152,26 +152,32 @@ class PoissonReconstruction:
             aberration_set.append(self.aberration * aberration)
         for _ in range(max_linesearch_iterations):
             test_cost = 0
+            test_aberration = ZernikeAberration(np.zeros(len(self.search_direction_vector)), self.size, self.ffts)
             for i, aberration in enumerate(aberration_set):
                 step = self.step_size * self.search_direction_vector
                 # TODO confirm that the following - sign is correct
                 test_coefficients = aberration.coefficients - step
                 # TODO remove the following line
                 # test_coefficients = self.diversity_set.ground_truth_aberration
+                # previous = test_aberration.coefficients.copy()
                 test_aberration = ZernikeAberration(test_coefficients,
                                                     self.size,
                                                     self.ffts)
+                # print((previous - test_aberration.coefficients).sum())
                 # TODO the following line seems to be the main slowdown
+                # TODO also, it is failing to change in each iteration of line search
                 test_estimate = test_aberration.apply(self.image, True)
+                # print(f"{test_aberration.coefficients=}")
+                # TODO this value fails to change
                 test_cost += (self.diversity_set.images[i] *
                               np.log(test_estimate) - test_estimate).mean()[()]
             print(f"after line search iteration: {test_cost.real=}, {self.step_size=}")
-            # print(f"{test_aberration.coefficients=}")
             if test_cost.real > self.iteration_info['cost'][-1]:
                 # Improvement over the previous iteration
                 break
             else:
                 self.step_size *= self.step_size_reduction_factor
+
         self.aberration = test_aberration
         return test_cost
 
@@ -216,7 +222,6 @@ class PoissonReconstruction:
 
         self.image *= update_factor / normalization_factor
         # self.search_direction_vector = -1 * coefficient_space_gradient / np.linalg.norm(coefficient_space_gradient)
-        print(coefficient_space_gradient)
         self.search_direction_vector = -1 * coefficient_space_gradient
 
     def __sizeof__(self):
