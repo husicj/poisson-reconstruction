@@ -50,6 +50,8 @@ class Aberration:
         else:
             F = image.fft(self.ffts)
         S = self.psf(image.microscope_parameters).fourier_transform
+        print(F)
+        # TODO this product has an fftshift mismatch
         G = F * S
         print("G")
         print(G.sum())
@@ -103,6 +105,10 @@ class Aberration:
         s = (np.abs(h)**2).real
         s.fourier_space = False
         S = s.fft(self.ffts)
+        print("psf")
+        # TODO these might be swapped
+        s.show()
+        S.show()
         S.fourier_space = True
         s.fourier_transform = S
         self.psf_ = s
