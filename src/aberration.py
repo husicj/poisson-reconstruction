@@ -42,10 +42,17 @@ class Aberration:
         image, or the Fourier transform of one, with image.fourier_space == True."""
 
         if image.fourier_space:
+            print("Warning: Aberration.apply() assumes that when it is passed "
+                  "a Fourier space image, that is the transform of the image "
+                  "to which the aberration is to be applied to reduce the "
+                  "number of transforms that must be calculated.")
             F = image
         else:
             F = image.fft(self.ffts)
-        G = F * self.psf(image.microscope_parameters).fourier_transform
+        S = self.psf(image.microscope_parameters).fourier_transform
+        G = F * S
+        print("G")
+        print(G.sum())
         if return_real_space_image:
             aberrated_image = G.fft(self.ffts).real
             aberrated_image.fourier_space = False

@@ -110,6 +110,7 @@ class PoissonReconstruction:
                                            self.ffts,
                                            diversity_set.microscope_parameters,
                                            self.aberration)
+        self.image.show()
         self.iteration_count = 0
         self.iteration_info = {'cost': [-np.inf]}
         # self.step_size = 3e4
@@ -152,20 +153,18 @@ class PoissonReconstruction:
             aberration_set.append(self.aberration * aberration)
         for _ in range(max_linesearch_iterations):
             test_cost = 0
-            test_aberration = ZernikeAberration(np.zeros(len(self.search_direction_vector)), self.size, self.ffts)
             for i, aberration in enumerate(aberration_set):
                 step = self.step_size * self.search_direction_vector
                 # TODO confirm that the following - sign is correct
                 test_coefficients = aberration.coefficients - step
                 # TODO remove the following line
                 # test_coefficients = self.diversity_set.ground_truth_aberration
-                # previous = test_aberration.coefficients.copy()
                 test_aberration = ZernikeAberration(test_coefficients,
                                                     self.size,
                                                     self.ffts)
-                # print((previous - test_aberration.coefficients).sum())
                 # TODO the following line seems to be the main slowdown
                 # TODO also, it is failing to change in each iteration of line search
+                # this might just be because the image estimate is zero
                 test_estimate = test_aberration.apply(self.image, True)
                 # print(f"{test_aberration.coefficients=}")
                 # TODO this value fails to change
