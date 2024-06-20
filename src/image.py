@@ -34,6 +34,13 @@ class DataImage(np.ndarray):
         obj.ffts = ffts
         return obj
         
+    def __array_finalize__(self, obj):
+        if obj is None: return
+        super().__array_finalize__(obj)
+        self.ffts = getattr(obj, 'ffts', None)
+        self.fourier_space = getattr(obj, 'fourier_space', False)
+        self.zero_frequency_centered = getattr(obj, 'zero_frequency_centered', False)
+
     @classmethod
     def load(cls, path, *args):
         """Loads an image from a file. The *args are additional arguments
@@ -80,16 +87,47 @@ class DataImage(np.ndarray):
             else:
                 self.fourier_transform = self.ffts.fft(self).view(DataImage)
         self.fourier_transform.fourier_space = not self.fourier_space
-        return self.fourier_transform
+        if self.zero_frequency_centered and not self.fourier_space:
+            return (self.fourier_transform).fftshift()
+        else:
+            return self.fourier_transform
+
+    def fftshift(self, axes=None):
+        if not self.fourier_space:
+            print("Warning: applying fftshift to a non-Fourier space image.")
+            show_stack()
+        if self.zero_frequency_centered:
+            print("Warning: using fftshift where ifftshift is probably "
+                  "correct instead")
+            show_stack()
+        out = np.fft.fftshift(self, axes).view(DataImage)
+        out.zero_frequency_centered = not self.zero_frequency_centered
+        return out
+
+    def ifftshift(self, axes=None):
+        if not self.fourier_space:
+            print("Warning: applying fftshift to a non-Fourier space image.")
+        if not self.zero_frequency_centered:
+            print("Warning: using ifftshift where fftshift is probably "
+                  "correct instead")
+            show_stack()
+        out = np.fft.ifftshift(self, axes).view(DataImage)
+        out.zero_frequency_centered = not self.zero_frequency_centered
+        return out
 
     def save(self, path):
         pass
 
     def show(self):
         """Plots the image represented by the class."""
-        # if self.fourier_space:
         if self.fourier_space:
-            obj = np.fft.fftshift(self)
+            if self.zero_frequency_centered:
+                obj = self
+            else:
+                print(f"{type(self)=}")
+                print(self.zero_frequency_centered)
+                obj = self.fftshift()
+                print(type(obj))
             print("Fourier space images are shown with the 0 frequency component at the center.")
         else:
             obj = self
@@ -103,18 +141,22 @@ class DataImage(np.ndarray):
             ax = plt.imshow(obj, cmap='gray')
         plt.show()
 
-    def __array_finalize__(self, obj):
-        if obj is None: return
-        super().__array_finalize__(obj)
-        self.ffts = getattr(obj, 'ffts', None)
-        self.fourier_space = getattr(obj, 'fourier_space', False)
-
     def __mul__(self, other):
         if isinstance(other, DataImage):
             if self.fourier_space != other.fourier_space:
                 if self.fourier_space is not None and other.fourier_space is not None:
                     print("Warning: coordinate space mismatch for multiplication.")
                     show_stack()
+            if (self.fourier_space and 
+                (self.zero_frequency_centered != other.zero_frequency_centered)):
+                print("Warning: computing a pointwise product of fourier space "
+                      "images where the zero-frequency components are "
+                      "not aligned. This can be resolved by calling the "
+                      "fftshift or ifftshift methods or one of the images. "
+                      "Note that using numpy.fft.fftshift or np.fft.ifftshiftt "
+                      "will not resolve this warning as it does not modify the "
+                      "image's zero_frequency_centered attribute.")
+                show_stack()
         out = super().__mul__(other)
         if getattr(other, 'fourier_space', None) is None:
             out.fourier_space = None
