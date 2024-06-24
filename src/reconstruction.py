@@ -110,7 +110,6 @@ class PoissonReconstruction:
                                            self.ffts,
                                            diversity_set.microscope_parameters,
                                            self.aberration)
-        self.image.show()
         self.iteration_count = 0
         self.iteration_info = {'cost': [-np.inf]}
         # self.step_size = 3e4
@@ -238,5 +237,5 @@ if __name__ == "__main__":
     path = 'data_dir'
     diversity_set = DiversitySet.load_with_data_loader(path)
     recon = PoissonReconstruction(diversity_set)
-    recon.run(max_iterations=5)
+    recon.run(max_iterations=10)
     recon.image.show()

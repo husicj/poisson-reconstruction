@@ -50,12 +50,8 @@ class Aberration:
         else:
             F = image.fft(self.ffts)
         S = self.psf(image.microscope_parameters).fourier_transform
-        print(F)
-        S.show()
         # TODO this product has an fftshift mismatch
         G = F * S
-        print("G")
-        print(G.sum())
         if return_real_space_image:
             aberrated_image = G.fft(self.ffts).real
             aberrated_image.fourier_space = False
@@ -77,12 +73,12 @@ class Aberration:
         array = np.exp(1j * self.aberration_function(uv_grid[0], uv_grid[1]))
         # TODO r_grid does not seem to be the correct size relative to array
         r_grid = np.sqrt((uv_grid ** 2).sum(axis=0))
-        pupil = (r_grid <= microscope.numerical_aperture / microscope.wavelength.value)
+        # pupil = (r_grid <= microscope.numerical_aperture / microscope.wavelength.value)
+        # TODO there is in inconsistency about the pupil boundary - it is 1 instead of NA/lambda
+        pupil = (r_grid <= 1)
         # TODO check that GPF real component makes sense - check that magnitude is constant inside pupil
         gpf = MicroscopeImage(np.fft.ifftshift(pupil * array), self.ffts, microscope, None)
         gpf.fourier_space = True
-        gpf.zero_frequency_centered = False
-        gpf.show()
         self.gpf_ = gpf
         return gpf
 
@@ -107,13 +103,12 @@ class Aberration:
         if self.psf_ is not None and self.microscope == microscope:
             return self.psf_
         h = self.gpf(microscope).fft()
-        s = (np.abs(h)**2).real
+        s = np.fft.fftshift((np.abs(h)**2).real).view(DataImage)
         s.fourier_space = False
         S = s.fft(self.ffts)
-        print("psf")
+        # np.abs(S).view(DataImage).show()
+        # S.show
         # TODO these might be swapped
-        s.show()
-        S.show()
         S.fourier_space = True
         s.fourier_transform = S
         self.psf_ = s
@@ -273,7 +268,13 @@ class ZernikeAberration(Aberration):
         n, m = self.zernnoll2nm(j0)
         grid = np.mgrid[0:self.size, 0:self.size] # an array of coordinates 
         uv_grid = self._pixel_to_pupil_coordinate(grid, self.microscope)
-        array = (self.zernike(n, m, uv_grid[0], uv_grid[1])).ifftshift()
+        shifted_array = MicroscopeImage(self.zernike(n, m, uv_grid[0], uv_grid[1]),
+                                        self.ffts,
+                                        self.microscope,
+                                        None)
+        shifted_array.fourier_space = True
+        shifted_array.zero_frequency_centered = True
+        array = shifted_array.ifftshift()
         return array
 
     def zernnoll2nm(self, j0, numskip=0):  #technically noll -1, so starting at j = 0
