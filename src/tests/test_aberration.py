@@ -67,24 +67,24 @@ class TestAberrationMethods(unittest.TestCase):
         self.assertTrue(np.array_equal(OUTPUT4, EXPECTED_RESULT4))
 
     def test_psf(self):
-        EXPECTED_RESULT0 = (1/16 * np.array([[11, 3,-1, 3],
-                                             [ 3,-1,-1,-1],
-                                             [-1,-1, 3,-1],
-                                             [ 3,-1,-1,-1]])) ** 2
+        EXPECTED_RESULT0 = np.fft.ifftshift(1/16 * np.array([[11, 3,-1, 3],
+                                                             [ 3,-1,-1,-1],
+                                                             [-1,-1, 3,-1],
+                                                             [ 3,-1,-1,-1]])) ** 2
         OUTPUT0 = self.test_aberration0.psf(self.test_microscope0)
         self.assertTrue(np.array_equal(OUTPUT0, EXPECTED_RESULT0))
 
-        EXPECTED_RESULT2 = (1/16 * np.array([[11, 3,-1, 3],
-                                             [ 3,-1,-1,-1],
-                                             [-1,-1, 3,-1],
-                                             [ 3,-1,-1,-1]])) ** 2
+        EXPECTED_RESULT2 = np.fft.ifftshift(1/16 * np.array([[11, 3,-1, 3],
+                                                             [ 3,-1,-1,-1],
+                                                             [-1,-1, 3,-1],
+                                                             [ 3,-1,-1,-1]])) ** 2
         OUTPUT2 = self.test_aberration2.psf(self.test_microscope0)
         self.assertTrue(np.all(np.isclose(OUTPUT2, EXPECTED_RESULT2)))
 
-        EXPECTED_RESULT3 = np.array([[1,0,0,0],
-                                     [0,0,0,0],
-                                     [0,0,0,0],
-                                     [0,0,0,0]])
+        EXPECTED_RESULT3 = np.fft.ifftshift(np.array([[1,0,0,0],
+                                                      [0,0,0,0],
+                                                      [0,0,0,0],
+                                                      [0,0,0,0]]))
         OUTPUT3 = self.test_aberration0.psf(self.test_microscope2)
         self.assertTrue(np.array_equal(OUTPUT3, EXPECTED_RESULT3))
 
@@ -118,7 +118,7 @@ class TestAberrationMethods(unittest.TestCase):
         TEST_IMAGE1 = MicroscopeImage(np.random.rand(4,4),
                                      microscope_parameters=self.test_microscope0)
         PSF = self.test_aberration0.psf(self.test_microscope0)
-        EXPECTED_RESULT1 = sig.convolve2d(TEST_IMAGE1, PSF, boundary='wrap')[0:4, 0:4]
+        EXPECTED_RESULT1 = np.fft.ifftshift(sig.convolve2d(TEST_IMAGE1, PSF, boundary='wrap')[0:4, 0:4])
         OUTPUT1 = self.test_aberration0.apply(TEST_IMAGE1, True)
         self.assertTrue(np.all(np.isclose(EXPECTED_RESULT1, OUTPUT1)))
 
@@ -158,6 +158,7 @@ class TestZernikeAberrationMethods(unittest.TestCase):
             y = np.random.random()
             EXPECTED_RESULT0 = EXPECTED_ABERRATION0.aberration_function(x, y)
             OUTPUT0 = OUTPUT_ABERRATION0.aberration_function(x, y)
+            out = np.isclose(EXPECTED_RESULT0, OUTPUT0)
             self.assertTrue(np.isclose(EXPECTED_RESULT0, OUTPUT0))
 
 if __name__ == '__main__':

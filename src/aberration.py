@@ -50,10 +50,12 @@ class Aberration:
         else:
             F = image.fft(self.ffts)
         S = self.psf(image.microscope_parameters).fourier_transform
-        # TODO this product has an fftshift mismatch
         G = F * S
         if return_real_space_image:
-            aberrated_image = G.fft(self.ffts).real
+            aberrated_image = MicroscopeImage(np.fft.ifftshift(G.fft(self.ffts).real),
+                                              image.ffts,
+                                              image.microscope_parameters,
+                                              image.aberration)
             aberrated_image.fourier_space = False
             aberrated_image.fourier_transform = G
             return aberrated_image
@@ -71,12 +73,10 @@ class Aberration:
         grid = np.mgrid[0:self.size, 0:self.size] # an array of coordinates 
         uv_grid = self._pixel_to_pupil_coordinate(grid, microscope)
         array = np.exp(1j * self.aberration_function(uv_grid[0], uv_grid[1]))
-        # TODO r_grid does not seem to be the correct size relative to array
         r_grid = np.sqrt((uv_grid ** 2).sum(axis=0))
-        # pupil = (r_grid <= microscope.numerical_aperture / microscope.wavelength.value)
+        pupil = (r_grid <= microscope.numerical_aperture / microscope.wavelength.value)
         # TODO there is in inconsistency about the pupil boundary - it is 1 instead of NA/lambda
-        pupil = (r_grid <= 1)
-        # TODO check that GPF real component makes sense - check that magnitude is constant inside pupil
+        # pupil = (r_grid <= 1)
         gpf = MicroscopeImage(np.fft.ifftshift(pupil * array), self.ffts, microscope, None)
         gpf.fourier_space = True
         self.gpf_ = gpf
@@ -106,8 +106,6 @@ class Aberration:
         s = np.fft.fftshift((np.abs(h)**2).real).view(DataImage)
         s.fourier_space = False
         S = s.fft(self.ffts)
-        # np.abs(S).view(DataImage).show()
-        # S.show
         # TODO these might be swapped
         S.fourier_space = True
         s.fourier_transform = S
