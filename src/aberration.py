@@ -287,15 +287,15 @@ class ZernikeAberration(Aberration):
         return self.zern_polar(n, m, r, theta)
 
     def zernike_pixels(self, n, m, x, y):
-        u = self._pixel_to_pupil_coordinate(x)
-        v = self._pixel_to_pupil_coordinate(y)
+        u = self._pixel_to_unit_disc_coordinate(x)
+        v = self._pixel_to_unit_disc_coordinate(y)
         return self.zernike(n, m, u, v)
 
     def zernike_pixel_array(self, j0):
         n, m = self.zernnoll2nm(j0)
         grid = np.mgrid[0:self.size, 0:self.size] # an array of coordinates 
-        uv_grid = self._pixel_to_pupil_coordinate(grid, self.microscope)
-        shifted_array = MicroscopeImage(self.zernike(n, m, uv_grid[0], uv_grid[1]),
+        disc_grid = self._pixel_to_unit_disc_coordinate(grid, self.microscope)
+        shifted_array = MicroscopeImage(self.zernike(n, m, disc_grid[0], disc_grid[1]),
                                         self.ffts,
                                         self.microscope,
                                         None)

@@ -237,5 +237,5 @@ if __name__ == "__main__":
     path = 'data_dir'
     diversity_set = DiversitySet.load_with_data_loader(path)
     recon = PoissonReconstruction(diversity_set)
-    recon.run(max_iterations=10)
+    recon.run(max_iterations=5)
     recon.image.show()
