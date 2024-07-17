@@ -156,8 +156,6 @@ class PoissonReconstruction:
                 step = self.step_size * self.search_direction_vector
                 # TODO confirm that the following - sign is correct
                 test_coefficients = aberration.coefficients - step
-                # TODO remove the following line
-                # test_coefficients = self.diversity_set.ground_truth_aberration
                 test_aberration = ZernikeAberration(test_coefficients,
                                                     self.size,
                                                     self.ffts)
@@ -190,14 +188,14 @@ class PoissonReconstruction:
         # point spread functions of the applied aberrations for diveristy image
         # k along with the estimated unknown aberration. Thus this ratio
         # represents the discrepancy of the estimate from the captured images.
-        update_factor = DataImage.blank(self.size, self.ffts)#.view(dtype='complex128')
+        update_factor = DataImage.blank(self.size, self.ffts)
         coefficient_space_gradient = np.zeros(len(self.search_direction_vector))
         normalization_factor = 0
         for k in range(self.diversity_set.image_count):
             aberration_k = self.aberration * self.diversity_set.aberrations()[k]
             psf = aberration_k.psf(self.diversity_set.microscope_parameters) # s_k
             q = (self.diversity_set.images[k] /
-                 (psf.fourier_transform * self.image.fft(self.ffts)) # TODO check that multiplication is working as expected
+                 (psf.fourier_transform * self.image.fft(self.ffts))
                  .fft(self.ffts))
             Q = q.fft(self.ffts) 
             update_factor_term_transform = np.conj(psf).fft(self.ffts) * Q # TODO should be gpf instead of psf maybe
@@ -235,7 +233,8 @@ class PoissonReconstruction:
 if __name__ == "__main__":
     # TODO change the path variable to be supplied by cl argument
     path = 'data_dir'
-    diversity_set = DiversitySet.load_with_data_loader(path)
+    diversity_set = DiversitySet.load_with_data_loader(path).crop(256)
+    diversity_set.show()
     recon = PoissonReconstruction(diversity_set)
     recon.run(max_iterations=5)
     recon.image.show()

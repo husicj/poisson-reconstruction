@@ -52,15 +52,36 @@ class DataImage(np.ndarray):
     def blank(cls,
               size: int, 
               ffts: None | Fast_FFTs = None,
-              *args):
+              *args, **kwargs):
         """Creates a blank image, filled with ones (using numpy.ones).
         The *args are additional arguments passed to the __new__() method, used
         by subclasses of DataImage."""
-        image = np.ones((size, size))
+        try:
+            dtype = kwargs['dtype']
+        except KeyError:
+            dtype = None
+        image = np.ones((size, size), dtype=dtype)
         return cls(image, ffts, *args)
 
+    def crop(self, size: int, ffts: None | Fast_FFTs = None):
+        """Returns an object of the same type, but cropped to the given size
+        about the center of the image."""
+
+        if size > self.shape[0]:
+            raise ValueError("Cropped size larger than original")
+        crop_slice = slice(self.shape[0]//2 - size//2, self.shape[0]//2 + size//2)
+        # the image is cast to an ndarray and then a new DataImage
+        # is created because the FFT matrix is not shared
+        # Note: this means that _crop_return_func() should be overwritten for subclasses
+        cropped_image_array = self[crop_slice, crop_slice].view(np.ndarray)
+        return self._crop_return_func(cropped_image_array, ffts)
+
+    def _crop_return_func(self, cropped_image_array, ffts):
+        """A helper method for crop() to handle different arguments for subclassing."""
+        return DataImage(cropped_image_array, ffts)
+
     def fft(self,
-            ffts: Fast_FFTs = None,
+            ffts: None | Fast_FFTs = None,
             force_forward: Bool = False,
             force_inverse: Bool = False):
         """Calculates the fourier transform of the image, caching the result.
@@ -199,6 +220,14 @@ class MicroscopeImage(DataImage):
         obj.microscope_parameters = microscope_parameters
         obj.aberration = aberration
         return obj
+
+    def _crop_return_func(self, cropped_image_array, ffts):
+        """A helper method for crop() to handle different arguments for subclassing."""
+
+        return MicroscopeImage(cropped_image_array,
+                               ffts,
+                               self.microscope_parameters,
+                               self.aberration)
 
     def __array_finalize__(self, obj):
         if obj is None: return

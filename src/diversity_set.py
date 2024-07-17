@@ -85,6 +85,19 @@ class DiversitySet:
             aberration_list.append(image.aberration)
         return aberration_list
 
+    def crop(self, size):
+        """Returns a new DiversitySet object with images cropped to the given sizeg"""
+        cropped_image_array = []
+        aberrations = []
+        for image in self.images:
+            cropped_image_array.append(image.crop(size))
+            aberrations.append(image.aberration)
+        cropped_images = np.array(cropped_image_array)
+        return DiversitySet(cropped_images,
+                            aberrations,
+                            self.microscope_parameters,
+                            self.center_index)
+
     def show(self):
         """Display a preview of the image stack."""
         fig = plt.figure(figsize=(32, 6))
@@ -157,4 +170,3 @@ class DiversitySet:
                 size += sys.getsizeof(attribute.base)
             else:
                 size += sys.getsizeof(attribute)
-        return size
