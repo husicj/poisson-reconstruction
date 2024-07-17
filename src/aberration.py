@@ -16,7 +16,10 @@ from fast_fft import Fast_FFTs
 class Aberration:
     """Stores an image aberration dictated by the aberration_function and size
     provided to the constructor. This is primarily intended to be used with the
-    apply() method, which applies the aberration to a given image."""
+    apply() method, which applies the aberration to a given image. Note that
+    the aberration function is expected to be defined on the unit disc as
+    opposed to a disc of radius NA/wavelength; conversion to this domain
+    occurs during the calculation of the pupil function."""
 
     def __init__(self,
                  aberration_function: typing.Callable,
@@ -70,13 +73,11 @@ class Aberration:
 
         if self.gpf_ is not None and self.microscope == microscope:
             return self.gpf_
-        grid = np.mgrid[0:self.size, 0:self.size] # an array of coordinates 
-        uv_grid = self._pixel_to_pupil_coordinate(grid, microscope)
-        array = np.exp(1j * self.aberration_function(uv_grid[0], uv_grid[1]))
-        r_grid = np.sqrt((uv_grid ** 2).sum(axis=0))
-        pupil = (r_grid <= microscope.numerical_aperture / microscope.wavelength.value)
-        # TODO there is in inconsistency about the pupil boundary - it is 1 instead of NA/lambda
-        # pupil = (r_grid <= 1)
+        grid = np.mgrid[0:self.size, 0:self.size] # an array of pixel coordinates 
+        disc_grid = self._pixel_to_unit_disc_coordinate(grid, microscope)
+        array = np.exp(1j * self.aberration_function(disc_grid[0], disc_grid[1]))
+        r_grid = np.sqrt((disc_grid ** 2).sum(axis=0))
+        pupil = (r_grid <= 1)
         gpf = MicroscopeImage(np.fft.ifftshift(pupil * array), self.ffts, microscope, None)
         gpf.fourier_space = True
         self.gpf_ = gpf
@@ -91,6 +92,27 @@ class Aberration:
 
         scale_factor = 0.5 / (microscope.pixel_size.value * (self.size // 2))
         return scale_factor * (pixel_indices - self.size // 2)
+
+    def _pupil_to_unit_disc_coordinate(self,
+                                       pupil_coordinates: np.ndarray,
+                                       microscope: MicroscopeParameters
+                                       ) -> np.ndarray:
+        """Converts a pupil plane coordinate to a corresponding unit disc
+        coordinate: the support of the pupil function is scaled to the unit
+        disc."""
+
+        NA = microscope.numerical_aperture
+        wavelength = microscope.wavelength.value
+        return pupil_coordinates * wavelength / NA
+
+    def _pixel_to_unit_disc_coordinate(self,
+                                       pixel_indices: np.ndarray,
+                                       microscope: MicroscopeParameters
+                                       ) -> np.ndarray:
+        pupil_coordinates = self._pixel_to_pupil_coordinate(pixel_indices,
+                                                            microscope)
+        return self._pupil_to_unit_disc_coordinate(pupil_coordinates,
+                                                   microscope)
 
     def psf(self,
             microscope: MicroscopeParameters
@@ -223,8 +245,8 @@ class ZernikeAberration(Aberration):
     #####
     # The following functions are used to calculate the value of
     # a given Zerike polynomial at at given coordinate (x , y).
-    # The Zernike polynomials are typically defined on the unit circle,
-    # and here are constantly zero outside of the unit circle.
+    # The Zernike polynomials are typically defined on the unit disc,
+    # and here are constantly zero outside of the unit disc.
     # Note that these conform to the general definition of Zernike
     # polynomials, but the domain needs to be rescaled to decompose an
     # aberration into Zernike components, since the pupil is not typically

@@ -31,7 +31,7 @@ class TestAberrationMethods(unittest.TestCase):
         OUTPUT0 = self.test_aberration0.gpf(self.test_microscope0)
         self.assertTrue(np.array_equal(OUTPUT0, EXPECTED_RESULT0))
 
-        pix = np.exp(1j * self.test_aberration1._pixel_to_pupil_coordinate(1, self.test_microscope0)**2)
+        pix = np.exp(1j * self.test_aberration1._pixel_to_unit_disc_coordinate(1, self.test_microscope0)**2)
 
         EXPECTED_RESULT1 = np.fft.ifftshift([[0,        0, 1,        0],
                                              [0, pix ** 1, 1, pix **-1],
@@ -92,7 +92,7 @@ class TestAberrationMethods(unittest.TestCase):
         # uses gpf calcultion to determine equivalence, so can fail if
         # test_gpf fails
         mul_aberration0 = self.test_aberration0 * self.test_aberration1
-        pix = np.exp(1j * self.test_aberration1._pixel_to_pupil_coordinate(1, self.test_microscope0)**2)
+        pix = np.exp(1j * self.test_aberration1._pixel_to_unit_disc_coordinate(1, self.test_microscope0)**2)
         EXPECTED_RESULT0 = np.fft.ifftshift([[0,        0, 1,        0],
                                              [0, pix ** 1, 1, pix **-1],
                                              [1,        1, 1,        1],
