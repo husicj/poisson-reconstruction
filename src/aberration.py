@@ -222,7 +222,14 @@ class ZernikeAberration(Aberration):
         
     #####
     # The following functions are used to calculate the value of
-    # a given Zerike polynomial at at given pupil plane coordinate (x , y)
+    # a given Zerike polynomial at at given coordinate (x , y).
+    # The Zernike polynomials are typically defined on the unit circle,
+    # and here are constantly zero outside of the unit circle.
+    # Note that these conform to the general definition of Zernike
+    # polynomials, but the domain needs to be rescaled to decompose an
+    # aberration into Zernike components, since the pupil is not typically
+    # of radius 1, but has radius given by numerical aperture / wavelength
+
     def zern_theta(self, *args):
         if len(args) == 2:
             m, theta = args
