@@ -163,10 +163,13 @@ class PoissonReconstruction:
                 # TODO also, it is failing to change in each iteration of line search
                 # this might just be because the image estimate is zero
                 test_estimate = test_aberration.apply(self.image, True)
+                print(f"{(test_estimate)}")
                 # print(f"{test_aberration.coefficients=}")
-                # TODO this value fails to change
+                # the [()] indexing removes the MicroscopeImage wrapper from
+                # the value, since np.mean() preserves object type here
+                # TODO this value fails to change each iteration
                 test_cost += (self.diversity_set.images[i] *
-                              np.log(test_estimate) - test_estimate).mean()[()]
+                              np.log(test_estimate) - test_estimate).sum()[()]
             print(f"after line search iteration: {test_cost.real=}, {self.step_size=}")
             if test_cost.real > self.iteration_info['cost'][-1]:
                 # Improvement over the previous iteration
