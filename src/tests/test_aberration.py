@@ -11,6 +11,8 @@ from aberration import Aberration, ZernikeAberration
 from data_loader import MicroscopeParameters
 from image import MicroscopeImage
 
+import matplotlib.pyplot as plt
+
 
 class TestAberrationMethods(unittest.TestCase):
     def setUp(self):
@@ -18,10 +20,13 @@ class TestAberrationMethods(unittest.TestCase):
         self.test_microscope0 = MicroscopeParameters(wavelength=0.24 * unit.um)
         self.test_microscope1 = MicroscopeParameters(wavelength=0.4 * unit.um)
         self.test_microscope2 = MicroscopeParameters(wavelength=0.1 * unit.um)
+        self.test_microscope3 = MicroscopeParameters(wavelength=2.0 * unit.um)
         self.test_aberration0 = Aberration(lambda u, v: 0 * u * v, 4)
         self.test_aberration1 = Aberration(lambda u, v: u * v, 4)
         self.test_aberration2 = Aberration(lambda u, v: 0 * u * v + 1, 4)
         self.test_aberration3 = Aberration(lambda u, v: 0 * u * v, 7)
+        self.test_aberration4 = Aberration(lambda u, v: np.sqrt(u * u + v * v), 128)
+        self.test_aberration5 = Aberration(lambda u, v: (u*u + v*v) * np.cos(3 * np.arctan2(v, u)), 128)
 
     def test_gpf(self):
         EXPECTED_RESULT0 = np.fft.ifftshift([[0,0,1,0],
@@ -117,11 +122,40 @@ class TestAberrationMethods(unittest.TestCase):
 
         TEST_IMAGE1 = MicroscopeImage(np.random.rand(4,4),
                                      microscope_parameters=self.test_microscope0)
-        PSF = self.test_aberration0.psf(self.test_microscope0)
-        EXPECTED_RESULT1 = np.fft.ifftshift(sig.convolve2d(TEST_IMAGE1, PSF, boundary='wrap')[0:4, 0:4])
         OUTPUT1 = self.test_aberration0.apply(TEST_IMAGE1, True)
+        PSF1 = self.test_aberration0.psf(self.test_microscope0)
+        EXPECTED_RESULT1 = np.fft.ifftshift(sig.convolve2d(TEST_IMAGE1, PSF1, boundary='wrap')[0:4, 0:4])
         self.assertTrue(np.all(np.isclose(EXPECTED_RESULT1, OUTPUT1)))
 
+        TEST_IMAGE2 = MicroscopeImage(np.random.rand(128, 128),
+                                      microscope_parameters=self.test_microscope1)
+        OUTPUT2 = self.test_aberration4.apply(TEST_IMAGE2, True)
+        PSF2 = self.test_aberration4.psf(self.test_microscope1)
+        EXPECTED_RESULT2 = np.fft.ifftshift(sig.convolve2d(TEST_IMAGE2, PSF2, boundary='wrap')[0:128, 0:128])
+        self.assertTrue(np.all(np.isclose(EXPECTED_RESULT2, OUTPUT2)))
+
+        OUTPUT3 = self.test_aberration5.apply(TEST_IMAGE2, True)
+
+        fig = plt.figure()
+        gs = plt.GridSpec(1, 4)
+        ax0 = fig.add_subplot(gs[0,0])
+        ax0.imshow(TEST_IMAGE2, cmap='grey')
+        ax0.set_title('test_image')
+        ax0.axis('off')
+        ax1 = fig.add_subplot(gs[0,1])
+        ax1.imshow(OUTPUT2, cmap='grey')
+        ax1.set_title('output')
+        ax1.axis('off')
+        ax2 = fig.add_subplot(gs[0,2])
+        ax2.imshow(EXPECTED_RESULT2, cmap='grey')
+        ax2.set_title('expected')
+        ax2.axis('off')
+        ax3 = fig.add_subplot(gs[0,3])
+        ax3.imshow(OUTPUT3, cmap='grey')
+        ax3.set_title('bad_output')
+        ax3.axis('off')
+        plt.show()
+        self.assertFalse(np.all(np.isclose(OUTPUT2, OUTPUT3)))
 
 class TestZernikeAberrationMethods(unittest.TestCase):
     def setUp(self):

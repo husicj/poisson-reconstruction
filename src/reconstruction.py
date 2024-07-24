@@ -160,14 +160,10 @@ class PoissonReconstruction:
                                                     self.size,
                                                     self.ffts)
                 # TODO the following line seems to be the main slowdown
-                # TODO also, it is failing to change in each iteration of line search
-                # this might just be because the image estimate is zero
                 test_estimate = test_aberration.apply(self.image, True)
-                print(f"{(test_estimate)}")
                 # print(f"{test_aberration.coefficients=}")
                 # the [()] indexing removes the MicroscopeImage wrapper from
                 # the value, since np.mean() preserves object type here
-                # TODO this value fails to change each iteration
                 test_cost += (self.diversity_set.images[i] *
                               np.log(test_estimate) - test_estimate).sum()[()]
             print(f"after line search iteration: {test_cost.real=}, {self.step_size=}")
@@ -219,7 +215,7 @@ class PoissonReconstruction:
                 zern = aberration_k.zernike_pixel_array(noll_index)
                 coefficient_space_gradient[noll_index] += -2 * np.sum(zern * temp2) / (self.size * self.size)
 
-        self.image *= update_factor / normalization_factor
+        self.image = self.image * update_factor / normalization_factor
         # self.search_direction_vector = -1 * coefficient_space_gradient / np.linalg.norm(coefficient_space_gradient)
         self.search_direction_vector = -1 * coefficient_space_gradient
 
@@ -239,5 +235,5 @@ if __name__ == "__main__":
     diversity_set = DiversitySet.load_with_data_loader(path).crop(256)
     diversity_set.show()
     recon = PoissonReconstruction(diversity_set)
-    recon.run(max_iterations=5)
+    recon.run(max_iterations=20)
     recon.image.show()

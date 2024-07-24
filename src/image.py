@@ -83,7 +83,8 @@ class DataImage(np.ndarray):
     def fft(self,
             ffts: None | Fast_FFTs = None,
             force_forward: Bool = False,
-            force_inverse: Bool = False):
+            force_inverse: Bool = False,
+            force_recalculate: Bool = False):
         """Calculates the fourier transform of the image, caching the result.
         By default, the forward or inverse transform is chosen based on the
         value of self.fourier_space. For instances when the transform is not
@@ -102,7 +103,7 @@ class DataImage(np.ndarray):
             out = self.ffts.ift(self).view(DataImage)
             out.fourier_space = None
             return out
-        if getattr(self, 'fourier_transform', None) is None:
+        if (getattr(self, 'fourier_transform', None) is None) or force_recalculate:
             if self.fourier_space:
                 self.fourier_transform = self.ffts.ift(self).view(DataImage)
             else:
@@ -179,6 +180,7 @@ class DataImage(np.ndarray):
                       "image's zero_frequency_centered attribute.")
                 show_stack()
         out = super().__mul__(other)
+        _ = out.fft(force_recalculate = True)
         if getattr(other, 'fourier_space', None) is None:
             out.fourier_space = None
         else:
