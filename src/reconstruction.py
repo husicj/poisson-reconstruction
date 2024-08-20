@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -231,7 +232,7 @@ class PoissonReconstruction:
 
 if __name__ == "__main__":
     # TODO change the path variable to be supplied by cl argument
-    path = 'data_dir'
+    path = Path(__file__).parent / "../data_dir"
     diversity_set = DiversitySet.load_with_data_loader(path).crop(256)
     diversity_set.show()
     recon = PoissonReconstruction(diversity_set)
