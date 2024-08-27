@@ -8,3 +8,4 @@ psutil==5.9.0
 pyfftw==0.14.0
 scipy==1.14.0
 tifffile==2024.8.10
+tqdm

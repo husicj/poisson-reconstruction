@@ -3,6 +3,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+from tqdm import tqdm
 
 from aberration import ZernikeAberration
 from diversity_set import DiversitySet
@@ -125,16 +126,18 @@ class PoissonReconstruction:
             self.iteration_count = max_iterations or break_condition_met
             becomes true."""
 
-            while self.iteration_count < max_iterations:
-                if self.break_condition_met:
-                    self.break_condition_met = False
-                    break
-                self.single_step()
+            with tqdm(total=max_iterations, desc="Iterations") as iteration_timer:
+                while self.iteration_count < max_iterations:
+                    if self.break_condition_met:
+                        self.break_condition_met = False
+                        break
+                    self.single_step()
+                    iteration_timer.update(1)
 
     def single_step(self) -> None:
         """Runs a single iteration of the phase reconstruction algorithm."""
 
-        print(f"Iteration {self.iteration_count}")
+        # print(f"Iteration {self.iteration_count}")
         # print(f"{self.search_direction_vector=}")
         cost = self._line_search()
         # print(f"{self.diversity_set.ground_truth_aberration - self.aberration.coefficients=}")
@@ -151,28 +154,35 @@ class PoissonReconstruction:
         aberration_set = []
         for aberration in self.diversity_set.aberrations():
             aberration_set.append(self.aberration * aberration)
-        for _ in range(max_linesearch_iterations):
-            test_cost = 0
-            for i, aberration in enumerate(aberration_set):
-                step = self.step_size * self.search_direction_vector
-                # TODO confirm that the following - sign is correct
-                test_coefficients = aberration.coefficients - step
-                test_aberration = ZernikeAberration(test_coefficients,
-                                                    self.size,
-                                                    self.ffts)
-                # TODO the following line seems to be the main slowdown
-                test_estimate = test_aberration.apply(self.image, True)
-                # print(f"{test_aberration.coefficients=}")
-                # the [()] indexing removes the MicroscopeImage wrapper from
-                # the value, since np.mean() preserves object type here
-                test_cost += (self.diversity_set.images[i] *
-                              np.log(test_estimate) - test_estimate).sum()[()]
-            print(f"after line search iteration: {test_cost.real=}, {self.step_size=}")
-            if test_cost.real > self.iteration_info['cost'][-1]:
-                # Improvement over the previous iteration
-                break
-            else:
-                self.step_size *= self.step_size_reduction_factor
+
+        with tqdm(total=max_linesearch_iterations, leave=False, desc="Line search", position=1) as linesearch_timer:
+            for _ in range(max_linesearch_iterations):
+                test_cost = 0
+                for i, aberration in enumerate(aberration_set):
+                    step = self.step_size * self.search_direction_vector
+                    # TODO confirm that the following - sign is correct
+                    test_coefficients = aberration.coefficients - step
+                    test_aberration = ZernikeAberration(test_coefficients,
+                                                        self.size,
+                                                        self.ffts)
+                    # TODO the following line seems to be the main slowdown
+                    test_estimate = test_aberration.apply(self.image, True)
+                    # print(f"{test_aberration.coefficients=}")
+                    # the [()] indexing removes the MicroscopeImage wrapper from
+                    # the value, since np.mean() preserves object type here
+                    test_cost += (self.diversity_set.images[i] *
+                                np.log(test_estimate) - test_estimate).sum()[()]
+                linesearch_timer.set_postfix(
+                    test_cost_real=f'{test_cost.real:.4e}', 
+                    step_size=f'{self.step_size:.4e}'
+                )
+                linesearch_timer.update(1)
+                # print(f"after line search iteration: {test_cost.real=}, {self.step_size=}")
+                if test_cost.real > self.iteration_info['cost'][-1]:
+                    # Improvement over the previous iteration
+                    break
+                else:
+                    self.step_size *= self.step_size_reduction_factor
 
         self.aberration = test_aberration
         return test_cost
