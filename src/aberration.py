@@ -195,6 +195,7 @@ class ZernikeAberration(Aberration):
                         aberrations: np.ndarray | List[np.ndarray],
                         size: int,
                         ffts: Fast_FFTs = None,
+                        indexing: str = "Noll"
                         ) -> List[ZernikeAberration]:
         """A class method that takes an array or list of sets of Zernike
         polynomial coefficients and returns a list of objects of the called
@@ -202,7 +203,7 @@ class ZernikeAberration(Aberration):
 
         list_ = []
         for aberration in aberrations:
-            list_.append(cls(aberration, size))
+            list_.append(cls(aberration, size, ffts, indexing))
         return list_
 
     def coefficients_to_function(self,
@@ -223,13 +224,46 @@ class ZernikeAberration(Aberration):
             return acc
         return aberration_function
 
-    def coefficients_to_noll(coefficients: list | np.ndarray,
+    def coefficients_to_noll(self,
+                             coefficients: list | np.ndarray,
                              indexing: str
                              ) -> np.ndarray:
         """Converts coefficients from various indexing schemes of the Zernike
         polynomials to the Noll ordering."""
 
-        print(f"{self}.coefficients_to_noll() has not been implemented.")
+        match indexing:
+            case "Noll":
+                return coefficients
+            case "ANSI":
+                return self.ansi_to_noll(coefficients)
+            case _:
+                raise ValueError("Invalid indexing scheme provided.")
+
+    def ansi_to_noll(self, coefficients: list | np.ndarray) -> np.ndarray:
+        """Converts coefficients from ANSI indexing scheme to Noll"""
+
+        def ansi_to_zernike_indices(j):
+            # In case that j is a list convert it to numpy array
+            j = np.array(j)
+            n = (np.ceil((-3 + np.sqrt(9+8*j))/2))
+            m = 2*j-n*(n+2)
+            return n.astype(int), m.astype(int)
+        
+        def zernike_indices_to_noll(n, m):
+            # Convert the indices to Noll
+            j = (n * (n + 1)) // 2 + np.abs(m)
+            
+            # Corrections
+            mask1 = (m >= 0) & (n % 4 >= 2)
+            mask2 = (m <= 0) & (n % 4 <= 1)
+            
+            j[mask1 | mask2] += 1
+            return j
+
+        n, m = ansi_to_zernike_indices(np.arange(len(coefficients)))
+        noll_indices = zernike_indices_to_noll(n, m)
+        return coefficients[noll_indices-1]
+
 
     def noll(self):
         pass

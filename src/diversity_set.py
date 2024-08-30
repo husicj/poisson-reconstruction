@@ -75,7 +75,7 @@ class DiversitySet:
         ground_truth_aberration = np.pad(getattr(data, 'gt_phase_aberration_coeffs', None), (3,0))
         size = images[0].shape[0]
         aberration_list = np.pad(data.phase_diversities_coeffs, ((1,0), (3,0)))
-        aberrations = ZernikeAberration.aberration_list(aberration_list, size, ffts)
+        aberrations = ZernikeAberration.aberration_list(aberration_list, size, ffts, indexing='ANSI')
         return cls(images, aberrations, data.microscope_parameters, 0, ffts, ground_truth_aberration)
 
     def aberrations(self):
