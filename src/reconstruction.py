@@ -133,6 +133,8 @@ class PoissonReconstruction:
                         break
                     self.single_step()
                     iteration_timer.update(1)
+            # Shift image back to the natural order 
+            self.image = self.image.fftshift()
 
     def single_step(self) -> None:
         """Runs a single iteration of the phase reconstruction algorithm."""
