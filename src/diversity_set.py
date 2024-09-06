@@ -4,6 +4,7 @@ import imageio
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import gridspec
+from astropy import units
 
 import data_loader
 from aberration import Aberration, ZernikeAberration
@@ -76,6 +77,13 @@ class DiversitySet:
         size = images[0].shape[0]
         aberration_list = np.pad(data.phase_diversities_coeffs, ((1,0), (3,0)))
         aberrations = ZernikeAberration.aberration_list(aberration_list, size, ffts, indexing='ANSI')
+
+        # Convert aberrations into radians
+        for i in range(len(aberrations)):
+            aberrations[i].coefficients = ZernikeAberration.convert_rms_length_to_phase_units(value=aberrations[i].coefficients,
+                                                                                              wavelength=data.microscope_parameters.wavelength,
+                                                                                              unit=units.um)
+
         return cls(images, aberrations, data.microscope_parameters, 0, ffts, ground_truth_aberration)
 
     def aberrations(self):

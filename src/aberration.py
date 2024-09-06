@@ -350,3 +350,12 @@ class ZernikeAberration(Aberration):
     #
     #####
 
+    @staticmethod
+    def convert_rms_length_to_phase_units(value, wavelength, unit=None):
+        if unit is None:
+            unit = units.um
+        if type(value) is list:
+            value = np.array(value)
+        wavelength = wavelength.to(unit).value
+        conversion_factor = 2*np.pi / wavelength
+        return value * conversion_factor
