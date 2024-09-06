@@ -229,6 +229,8 @@ class PoissonReconstruction:
                 zern = aberration_k.zernike_pixel_array(noll_index)
                 coefficient_space_gradient[noll_index] += -2 * np.sum(zern * temp2) / (self.size * self.size)
 
+        # Apply fftshift to the update factor to match the natural order of the image
+        update_factor = update_factor.fftshift()
         self.image = self.image * update_factor / normalization_factor
         # self.search_direction_vector = -1 * coefficient_space_gradient / np.linalg.norm(coefficient_space_gradient)
         self.search_direction_vector = -1 * coefficient_space_gradient
