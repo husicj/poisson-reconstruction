@@ -133,8 +133,6 @@ class PoissonReconstruction:
                         break
                     self.single_step()
                     iteration_timer.update(1)
-            # Shift image back to the natural order 
-            self.image = self.image.fftshift()
 
     def single_step(self) -> None:
         """Runs a single iteration of the phase reconstruction algorithm."""
@@ -200,6 +198,9 @@ class PoissonReconstruction:
         # point spread functions of the applied aberrations for diveristy image
         # k along with the estimated unknown aberration. Thus this ratio
         # represents the discrepancy of the estimate from the captured images.
+
+        self.image.fftshift()
+
         update_factor = DataImage.blank(self.size, self.ffts)
         coefficient_space_gradient = np.zeros(len(self.search_direction_vector))
         normalization_factor = 0
