@@ -74,6 +74,9 @@ class DiversitySet:
         """Loads data from a specific existing file structure scheme."""
         data = data_loader.ExperimentalDataset(data_dir, iteration_number)
         images = np.insert(data.phase_diversity_images, 0, data.aberrated_image, axis=0)
+        # Normalize images (based on max value of the first image)
+        images = images / np.max(images[0])
+
         ground_truth_aberration = np.pad(getattr(data, 'gt_phase_aberration_coeffs', None), (3,0))
         size = images[0].shape[0]
         aberration_list = np.pad(data.phase_diversities_coeffs, ((1,0), (3,0)))
