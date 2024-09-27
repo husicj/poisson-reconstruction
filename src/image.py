@@ -7,6 +7,7 @@ import imageio
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import gridspec
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from fast_fft import Fast_FFTs
 from bin.mem_profile import show_stack
@@ -14,6 +15,27 @@ from bin.mem_profile import show_stack
 if TYPE_CHECKING:
     from data_loader import MicroscopeParameters
     from aberration import Aberration
+
+
+def show_colorbar(ax, mappable=None, label=None, orientation="right", size="5%", pad=0.05, fontsize=12):
+    """
+    Adds a colorbar to the plot associated with the given axes and mappable.
+
+    Parameters:
+    - ax: The matplotlib axes to which to add the colorbar.
+    - mappable: The mappable object to which the colorbar is associated.
+    - orientation: The orientation of the colorbar ("right" or "top" etc.).
+    - size: The size of the colorbar.
+    - pad: The padding between the colorbar and the axes.
+    """
+    if mappable is None:
+        mappable = ax.images[0]
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes(orientation, size=size, pad=pad)
+    plt.colorbar(mappable, cax=cax)
+    if label is not None:
+        cax.set_ylabel(label, fontsize=fontsize)
+
 
 class DataImage(np.ndarray):
     """Represents an image, an inherits all methods from the np.ndarray class.
@@ -160,7 +182,8 @@ class DataImage(np.ndarray):
             ax0.set_title('real component')
             ax1.set_title('imaginary component')
         else:
-            ax = plt.imshow(obj, cmap='gray')
+            plt.imshow(obj, cmap='gray')
+            show_colorbar(plt.gca(), label='Intensity')
         plt.show()
 
     def __mul__(self, other):

@@ -13,6 +13,7 @@ from fast_fft import Fast_FFTs
 from image import MicroscopeImage
 from typing import List, Self, TYPE_CHECKING
 
+from image import show_colorbar
 
 class DiversitySet:
     """This class contains a set of images, represented as a list of instances
@@ -116,6 +117,8 @@ class DiversitySet:
             ax.imshow(self.images[i], cmap='gray')
             ax.set_title(f"Image {i}")
             ax.axis('off')
+            show_colorbar(plt.gca())
+
         plt.show()
 
     def save(self):
