@@ -82,7 +82,22 @@ class DataImage(np.ndarray):
             dtype = kwargs['dtype']
         except KeyError:
             dtype = None
-        image = np.ones((size, size), dtype=dtype)
+        image = np.zeros((size, size), dtype=dtype)
+        return cls(image, ffts, *args)
+
+    @classmethod
+    def black(cls,
+              size: int, 
+              ffts: None | Fast_FFTs = None,
+              *args, **kwargs):
+        """Creates a blank image, filled with ones (using numpy.ones).
+        The *args are additional arguments passed to the __new__() method, used
+        by subclasses of DataImage."""
+        try:
+            dtype = kwargs['dtype']
+        except KeyError:
+            dtype = None
+        image = np.ones((size, size), dtype=dtype) * 0.1
         return cls(image, ffts, *args)
 
     def crop(self, size: int, ffts: None | Fast_FFTs = None):

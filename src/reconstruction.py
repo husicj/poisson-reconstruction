@@ -108,10 +108,10 @@ class PoissonReconstruction:
             self.ffts = ffts
         else:
             self.ffts = Fast_FFTs(self.size, 1)
-        self.image = MicroscopeImage.blank(self.size,
-                                           self.ffts,
-                                           diversity_set.microscope_parameters,
-                                           self.aberration)
+        self.object_estimate = MicroscopeImage.black(self.size,
+                                                     self.ffts,
+                                                     diversity_set.microscope_parameters,
+                                                     self.aberration_estimate)
         self.iteration_count = 0
         self.iteration_info = {'cost': [-np.inf]}
         # self.step_size = 3e4
