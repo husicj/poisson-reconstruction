@@ -105,10 +105,13 @@ class DiversitySet:
             cropped_image_array.append(image.crop(size))
             aberrations.append(image.aberration)
         cropped_images = np.array(cropped_image_array)
+
         return DiversitySet(cropped_images,
                             aberrations,
                             self.microscope_parameters,
-                            self.center_index)
+                            self.center_index,
+                            self.ffts,
+                            self.ground_truth_aberration)
 
     def show(self):
         """Display a preview of the image stack."""
