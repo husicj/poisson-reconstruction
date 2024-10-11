@@ -99,7 +99,7 @@ class PoissonReconstruction:
                  estimated_coefficients_count: int = 21,
                  ffts: Fast_FFTs = None
                  ) -> None:
-        self.aberration = None
+        self.aberration_estimate = None
         self.break_condition_met = False
         self.diversity_set = diversity_set
         self.size = diversity_set.images[0].shape[0]
@@ -113,10 +113,10 @@ class PoissonReconstruction:
                                                      diversity_set.microscope_parameters,
                                                      self.aberration_estimate)
         self.iteration_count = 0
-        self.iteration_info = {'cost': [-np.inf]}
-        # self.step_size = 3e4
-        self.step_size = 1
-        self.step_size_reduction_factor =0.9
+        self.iteration_info = {'likelihood': [-np.inf]}
+        self.step_size = 3e4
+        # self.step_size = 1
+        self.step_size_reduction_factor = 0.3 #0.9 # FIX: used .3 in iter_p
         # we start with a small search vector so that we can calculate an
         # initial cost to compare against in the first iteration
         self.search_direction_vector = 0.01 * np.ones((estimated_coefficients_count)) / self.step_size
@@ -142,7 +142,7 @@ class PoissonReconstruction:
         cost = self._line_search()
         # print(f"{self.diversity_set.ground_truth_aberration - self.aberration.coefficients=}")
         self._update_object_estimate_and_search_direction()
-        self.iteration_info['cost'].append(cost)
+        self.iteration_info['likelihood'].append(cost)
         self.iteration_count += 1
 
     def _line_search(self,
@@ -153,39 +153,40 @@ class PoissonReconstruction:
 
         aberration_set = []
         for aberration in self.diversity_set.aberrations():
-            aberration_set.append(self.aberration * aberration)
+            aberration_set.append(self.aberration_estimate * aberration)
 
         with tqdm(total=max_linesearch_iterations, leave=False, desc="Line search", position=1) as linesearch_timer:
             for _ in range(max_linesearch_iterations):
-                test_cost = 0
+                likelihood = 0
                 for i, aberration in enumerate(aberration_set):
                     step = self.step_size * self.search_direction_vector
-                    # TODO confirm that the following - sign is correct
-                    test_coefficients = aberration.coefficients - step
-                    test_aberration = ZernikeAberration(test_coefficients,
-                                                        self.size,
-                                                        self.ffts)
+                    coefficients_estimate = aberration.coefficients + step
+                    aberration_estimate = ZernikeAberration(coefficients_estimate, self.size, self.ffts)
+
                     # TODO the following line seems to be the main slowdown
-                    test_estimate = test_aberration.apply(self.image, True)
+                    image_estimates = aberration_estimate.apply(self.object_estimate, True)
+
                     # print(f"{test_aberration.coefficients=}")
                     # the [()] indexing removes the MicroscopeImage wrapper from
                     # the value, since np.mean() preserves object type here
-                    test_cost += (self.diversity_set.images[i] *
-                                np.log(test_estimate) - test_estimate).sum()[()]
+
+                    likelihood += (self.diversity_set.images[i] * np.log(image_estimates) - image_estimates).sum()[()]
+
                 linesearch_timer.set_postfix(
-                    test_cost_real=f'{test_cost.real:.4e}', 
+                    likelihood_real=f'{likelihood.real:.4e}',
                     step_size=f'{self.step_size:.4e}'
                 )
                 linesearch_timer.update(1)
                 # print(f"after line search iteration: {test_cost.real=}, {self.step_size=}")
-                if test_cost.real > self.iteration_info['cost'][-1]:
+
+                if likelihood.real > self.iteration_info['likelihood'][-1]:
                     # Improvement over the previous iteration
                     break
                 else:
                     self.step_size *= self.step_size_reduction_factor
 
-        self.aberration = test_aberration
-        return test_cost
+        self.aberration_estimate = aberration_estimate
+        return likelihood
 
     def _update_object_estimate_and_search_direction(self) -> None:
         """Used the aberration estimate in self.aberration to create an updated
@@ -196,44 +197,51 @@ class PoissonReconstruction:
         # representing d_k(x) / (f(x) * s_k(x)), where d_k are the diversity
         # images, f(x) is the estimation of the true object, and s_k are the
         # point spread functions of the applied aberrations for diveristy image
-        # k along with the estimated unknown aberration. Thus this ratio
+        # k along with the estimated unknown aberration. Thus, this ratio
         # represents the discrepancy of the estimate from the captured images.
 
-        self.image.fftshift()
+        self.object_estimate.fftshift()
 
         update_factor = DataImage.blank(self.size, self.ffts)
         coefficient_space_gradient = np.zeros(len(self.search_direction_vector))
         normalization_factor = 0
+        gradient_inner_sum = 0
+
         for k in range(self.diversity_set.image_count):
-            aberration_k = self.aberration * self.diversity_set.aberrations()[k]
-            psf = aberration_k.psf(self.diversity_set.microscope_parameters) # s_k
-            q = (self.diversity_set.images[k] /
-                 (psf.fourier_transform * self.image.fft(self.ffts))
-                 .fft(self.ffts))
-            Q = q.fft(self.ffts) 
-            update_factor_term_transform = np.conj(psf).fft(self.ffts) * Q # TODO should be gpf instead of psf maybe
-            # TODO check if this ignoring of imaginary components makes sense
+            aberration_k = self.aberration_estimate + self.diversity_set.aberrations()[k]
+            psf_k = aberration_k.psf(self.diversity_set.microscope_parameters) # s_k
+            gpf_k = aberration_k.gpf(self.diversity_set.microscope_parameters) # H_k
+
+            # Calculate "fraction term" required for both gradient and object update
+            image_estimate_k_fft = psf_k.fourier_transform * self.object_estimate.fft(self.ffts)
+            q = self.diversity_set.images[k] / image_estimate_k_fft.fft(self.ffts)
+            Q = q.fft(self.ffts)
+
+            # Object update factor
+            update_factor_term_transform = np.flip(psf_k).fft(self.ffts) * Q # NOTE: could also replace flip in object space with conjugate in Fourier space
             update_factor += update_factor_term_transform.fft(self.ffts).real
-            normalization_factor += psf[self.center_coordinate]
+            normalization_factor += np.sum(psf_k)
 
-            # the loss function gradient with respect to Zernike coefficients
-            # is broken up here to help with readability
-            # TODO the loss function seems to be giving incorrect values
-            temp1 = (np.conj(aberration_k.gpf(self.image.microscope_parameters)
-                             .fft(self.ffts)) *
-                     (Q * np.flip(self.image).fft(self.ffts))
-                     .fft(self.ffts, force_inverse=True))
-            temp2 = np.imag(aberration_k.gpf(self.image.microscope_parameters)
-                            * temp1)
-            for noll_index in range(len(coefficient_space_gradient)):
-                zern = aberration_k.zernike_pixel_array(noll_index)
-                coefficient_space_gradient[noll_index] += -2 * np.sum(zern * temp2) / (self.size * self.size)
+            # Coefficient gradient terms
+            h_k_conj = np.conj(gpf_k.fft(self.ffts))
+            inverse_fourier_term = ((h_k_conj * np.flip(self.object_estimate).fft(self.ffts) * Q)
+                                    .fft(self.ffts, force_inverse=True))
+            gradient_inner_sum += gpf_k * inverse_fourier_term
 
+        ### Coefficient gradient calculation
+        for noll_index in range(len(coefficient_space_gradient)):
+            # TODO: check calculation of Zernikes! Normalization seems to be missing (both Zernike normalization and lambda/NA term)
+            zern = self.aberration_estimate.zernike_pixel_array(noll_index)
+            coefficient_space_gradient[noll_index] = -2 * np.sum(zern * np.imag(gradient_inner_sum)) # TODO: do we need to divide by size * size? would correspond to taking the mean
+
+        ### Object update
         # Apply fftshift to the update factor to match the natural order of the image
         update_factor = update_factor.fftshift()
-        self.image = self.image * update_factor / normalization_factor
-        # self.search_direction_vector = -1 * coefficient_space_gradient / np.linalg.norm(coefficient_space_gradient)
-        self.search_direction_vector = -1 * coefficient_space_gradient
+        self.object_estimate.fftshift()
+        self.object_estimate = self.object_estimate * update_factor / normalization_factor
+
+        ### Search direction update
+        self.search_direction_vector = coefficient_space_gradient
 
     def __sizeof__(self):
         size = 0
@@ -246,10 +254,19 @@ class PoissonReconstruction:
  
 
 if __name__ == "__main__":
+    # Load data
     # TODO change the path variable to be supplied by cl argument
     path = Path(__file__).parent / "../data_dir"
     diversity_set = DiversitySet.load_with_data_loader(path).crop(256)
     diversity_set.show()
+
+    # Run reconstruction
     recon = PoissonReconstruction(diversity_set)
-    recon.run(max_iterations=20)
-    recon.image.show()
+    recon.run(max_iterations=2)
+
+    # Show results
+    # Print with significant digits
+    print(f"Ground truth aberration: {diversity_set.ground_truth_aberration}")
+    print(f"Estimated aberration: {recon.aberration_estimate.coefficients}")
+    recon.object_estimate.show()
+    recon.aberration_estimate.get_phase(recon.object_estimate.microscope_parameters).show()

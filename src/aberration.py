@@ -82,6 +82,23 @@ class Aberration:
         gpf.fourier_space = True
         self.gpf_ = gpf
         return gpf
+    
+    def get_phase(self,
+                    microscope: MicroscopeParameters
+                    ) -> MicroscopeImage:
+        """Returns the phase of the generalized pupil function associated with the
+        aberration. The microscope parameters are used to set the pixel
+        scale."""
+        grid = np.mgrid[0:self.size, 0:self.size] # an array of pixel coordinates 
+        disc_grid = self._pixel_to_unit_disc_coordinate(grid, microscope)
+        array = self.aberration_function(disc_grid[0], disc_grid[1])
+        r_grid = np.sqrt((disc_grid ** 2).sum(axis=0))
+        pupil = (r_grid <= 1)
+        phase = MicroscopeImage(np.fft.ifftshift(pupil * array), self.ffts, microscope, None)
+        phase.fourier_space = True
+        return phase
+
+
 
     def _pixel_to_pupil_coordinate(self,
                                    pixel_indices: np.ndarray,
@@ -275,7 +292,12 @@ class ZernikeAberration(Aberration):
         if isinstance(other, type(self)):
             coefficients = self.coefficients + other.coefficients
             return ZernikeAberration(coefficients, self.size, self.ffts)
-        
+
+    def __add__(self, other):
+        if isinstance(other, type(self)):
+            coefficients = self.coefficients + other.coefficients
+            return ZernikeAberration(coefficients, self.size, self.ffts)
+
     #####
     # The following functions are used to calculate the value of
     # a given Zerike polynomial at at given coordinate (x , y).
